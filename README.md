@@ -16,8 +16,7 @@ their turn — from prosody, without waiting for a transcript.
 | **plugin** | [`smart-turn-livekit`](https://pypi.org/project/smart-turn-livekit/) — `pip install`, runs on LiveKit Agents |
 | **this repo** | the data pipeline, the training method, and every experiment behind those |
 
-Hosted speech APIs offer Tamil turn detection; none of them is open, local, or
-inspectable. This is a self-hostable model that runs on a CPU, with the dataset
+This is a self-hostable model that runs on a CPU, with the dataset
 and the method published alongside it.
 
 ---
