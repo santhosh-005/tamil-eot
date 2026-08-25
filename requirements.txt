@@ -1,0 +1,27 @@
+# The CPU pipeline: steps 00-14 and 16-21. No torch, no transformers --
+# training happens in notebooks/train_smart_turn_tamil.ipynb on a Colab T4, and
+# everything here runs against ONNX.
+numpy>=2.0
+onnxruntime>=1.20         # inference, and the int8 tooling in step 19
+onnx>=1.16                # onnxruntime.quantization imports it; step 19 dies without it
+soundfile>=0.13
+scikit-learn>=1.5         # step 09's shortcut probe
+huggingface_hub>=0.23     # step 00, fetching upstream weights
+
+# The published plugin, so the features scored offline are the ones served
+# live. Steps 18, 20, 22.  https://pypi.org/project/smart-turn-livekit/
+smart-turn-livekit>=0.1.0
+
+# --- installed on demand, one step each -------------------------------------
+#
+#   step 15  export a Colab checkpoint to ONNX, on CPU:
+#       pip install 'torch>=2.4' 'transformers>=4.44'
+#
+#   step 21  stage the HuggingFace dataset repo:
+#       pip install 'pyarrow>=17'
+#
+#   step 22  replay through the real Silero VAD and the real LiveKit adapter:
+#       pip install 'smart-turn-livekit[livekit]' livekit-plugins-silero
+#
+#   step 11  label on Vertex AI Batch. Plain REST plus the `gcloud` CLI for GCS
+#            and auth -- no Python SDK. See the step's docstring.

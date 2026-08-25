@@ -1,0 +1,17 @@
+{
+ "total": 50532,
+ "cand_change": 11654,
+ "drop_pos_backchannel": 3778,
+ "drop_short_prev": 14902,
+ "keep_pos": 4461,
+ "cand_hold": 17491,
+ "drop_neg_pause_short": 5475,
+ "drop_straddle": 6174,
+ "drop_pos_gap_long": 2132,
+ "keep_neg": 9406,
+ "drop_neg_resume_tiny": 174,
+ "drop_neg_pause_long": 377,
+ "change_midseg": 1283,
+ "hold_inter": 2059,
+ "drop_bargein": 311
+}

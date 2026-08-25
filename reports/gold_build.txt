@@ -1,0 +1,65 @@
+========================================================================
+SPEECH ACCOUNTING (both legs, 116 calls)
+========================================================================
+  transcript segments span   :   39.66 h
+  VAD speech                 :   32.32 h  (81.5% of segment span)
+  ... backed by a transcript :   31.64 h
+  dropped as crosstalk bleed :    0.69 h in 4,912 spans (2.1% of VAD speech)
+
+  simultaneous speech, VAD level: 5.7% of speech
+    (the R1 audit measured 28.1% at the transcript-segment level;
+     the difference is the padding those segments carry)
+
+========================================================================
+BOUNDARIES: 50,532 total  (20,013 floor changes, 30,519 same-speaker holds)
+========================================================================
+  gap at floor changes (VAD offset -> other leg onset):
+    0-200ms                      2,582  ( 12.9%)
+    200-500ms                    4,182  ( 20.9%)
+    500-750ms                    3,009  ( 15.0%)
+    0.75-1.5s                    5,322  ( 26.6%)
+    1.5-3s                       3,260  ( 16.3%)
+    >3s                          1,658  (  8.3%)
+    median 0.768s
+  pause at same-speaker holds:
+    <250ms                       9,239  ( 30.3%)
+    250-500ms                    8,836  ( 29.0%)
+    0.5-1s                       5,498  ( 18.0%)
+    1-2s                         3,270  ( 10.7%)
+    >2s                          3,676  ( 12.0%)
+    median 0.384s
+
+========================================================================
+FUNNEL
+========================================================================
+  total                     50,532
+  drop_short_prev           14,902
+  drop_straddle              6,174
+  drop_bargein                 311
+  cand_change               11,654
+  drop_pos_gap_long          2,132
+  drop_pos_backchannel       4,771
+  change_midseg                850
+  keep_pos                   3,901  <=
+  cand_hold                 17,491
+  drop_neg_pause_short       5,475
+  drop_neg_pause_long          377
+  drop_neg_resume_tiny         174
+  hold_inter                 2,059
+  keep_neg                   9,406  <=
+
+========================================================================
+GOLD SET
+========================================================================
+  change      label 1   3,901   floor changed at a segment end
+  hold_intra  label 0   9,406   pause inside one segment
+  --------------------------------------------------------------
+  CORE                 13,307   balance 0.29 positive
+
+  held back (labelled and kept, out of the core set):
+  change_midseg           850   other side cut in mid-utterance
+  hold_inter            2,059   pause straddles a segment edge
+
+  calls contributing   116/116
+
+wrote data/gold/samples.jsonl  (16,216 rows)

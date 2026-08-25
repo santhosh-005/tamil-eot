@@ -1,0 +1,37 @@
+{
+ "funnel": {
+  "total": 50532,
+  "cand_change": 14050,
+  "drop_pos_backchannel": 4516,
+  "drop_short_prev": 6176,
+  "keep_pos": 5544,
+  "cand_hold": 19649,
+  "drop_neg_pause_short": 6152,
+  "drop_pos_gap_long": 2417,
+  "drop_straddle": 10100,
+  "keep_neg": 10715,
+  "hold_inter": 2451,
+  "drop_neg_resume_tiny": 225,
+  "change_midseg": 1573,
+  "drop_bargein": 557,
+  "drop_neg_pause_long": 106
+ },
+ "new": 3074,
+ "drift": 993,
+ "known": 16216,
+ "by_source": {
+  "change": 1083,
+  "hold_inter": 392,
+  "hold_intra": 1309,
+  "change_midseg": 290
+ },
+ "by_label": {
+  "1": 1373,
+  "0": 1701
+ },
+ "by_split": {
+  "train": 1987,
+  "test": 802,
+  "dev": 285
+ }
+}

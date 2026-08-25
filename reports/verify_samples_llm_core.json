@@ -1,0 +1,23 @@
+{
+ "samples": "samples_llm.jsonl",
+ "sources": "core",
+ "d_prev_dur": -0.092,
+ "d_gap": 0.469,
+ "d_dur": -0.042,
+ "d_rms_all": -0.043,
+ "d_rms_last200": -0.048,
+ "d_rms_last500": -0.184,
+ "d_rms_pre500": -0.203,
+ "d_peak": -0.015,
+ "d_zcr": 0.023,
+ "d_tilt": 0.133,
+ "d_p90_over_p50": 0.02,
+ "d_voiced_frac": -0.17,
+ "n": 13305,
+ "auc": 0.622,
+ "acc": 0.642,
+ "majority": 0.631,
+ "verdict": "clean",
+ "n_complete": 8600,
+ "n_incomplete": 4705
+}

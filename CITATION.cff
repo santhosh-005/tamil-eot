@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+title: "TamilEOT: semantic end-of-turn detection for Tamil"
+message: "If you use this dataset, these models, or this method, please cite it."
+type: software
+authors:
+  - alias: santhosh-005
+repository-code: "https://github.com/santhosh-005/tamil-eot"
+url: "https://huggingface.co/santhosh-005/smart-turn-tamil"
+abstract: >-
+  A semantic end-of-turn detector for Tamil, built by fine-tuning Smart Turn v3
+  on 18,485 turn boundaries labelled from 116 real Tamil telephone
+  conversations. Speaker labels come for free from the corpus structure — one
+  audio file per speaker — so no diarization is involved. Zero-shot Smart Turn
+  v3.2 scores 70.30% on the sealed test split; the fine-tunes score 83.71%
+  (whisper-tiny) and 86.13% (whisper-base), shipped as int8 ONNX.
+keywords:
+  - end-of-turn detection
+  - turn-taking
+  - endpointing
+  - voice agents
+  - Tamil
+  - Indic languages
+  - speech
+license: BSD-2-Clause
+date-released: "2026-08-25"
+version: "1.0.0"
+references:
+  - type: data
+    title: "SPRING-INX: A Multilingual Indian Language Speech Corpus by SPRING Lab, IIT Madras"
+    url: "https://arxiv.org/abs/2310.14654"
+    notes: "Source corpus (Tamil R1), CC BY 4.0."
+  - type: software
+    title: "Smart Turn"
+    url: "https://github.com/pipecat-ai/smart-turn"
+    notes: "Base model and architecture, BSD-2-Clause."

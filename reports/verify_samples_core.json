@@ -1,0 +1,23 @@
+{
+ "samples": "samples.jsonl",
+ "sources": "core",
+ "d_prev_dur": -0.326,
+ "d_gap": 0.573,
+ "d_dur": -0.059,
+ "d_rms_all": -0.163,
+ "d_rms_last200": -0.137,
+ "d_rms_last500": -0.144,
+ "d_rms_pre500": -0.179,
+ "d_peak": -0.044,
+ "d_zcr": 0.024,
+ "d_tilt": 0.284,
+ "d_p90_over_p50": -0.002,
+ "d_voiced_frac": -0.459,
+ "n": 13307,
+ "auc": 0.601,
+ "acc": 0.701,
+ "majority": 0.702,
+ "verdict": "clean",
+ "n_complete": 3901,
+ "n_incomplete": 9406
+}

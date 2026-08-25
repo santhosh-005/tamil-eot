@@ -1,0 +1,31 @@
+# ---------------------------------------------------------------- python
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+
+# ---------------------------------------------------------------- build outputs
+# Everything under data/ is derived from the SPRING_INX corpus by the pipeline.
+# 7.9 GB of it. Reproduce with pipeline/01..08, do not commit.
+data/
+
+# ---------------------------------------------------------------- weights
+# Third-party weights are fetched and hash-checked by pipeline/00_fetch_models.py.
+# Our own trained models live on HuggingFace -- see models/README.md.
+models/*
+!models/README.md
+!models/mel_filters.npz
+
+# ---------------------------------------------------------------- reports
+# The blind listening clips are audio cut from the corpus and carry its licence
+# terms rather than ours; the verdicts they produced (qa/sheet.tsv) do ship.
+reports/qa/blind/
+
+# ---------------------------------------------------------------- release staging
+# 1.9 GB of copies. Rebuild with pipeline/21_pack_for_hf.py.
+dist/
+
+# ---------------------------------------------------------------- live-call rig
+# Credentials, and recorded calls containing a real person's voice.
+integrations-test/livekit-sarvam/.env
+integrations-test/livekit-sarvam/calls/

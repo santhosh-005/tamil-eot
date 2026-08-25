@@ -1,0 +1,30 @@
+13,307 usable samples from samples.jsonl  [pipeline labels]  sources=core
+
+1. SPLIT LEAKAGE
+   calls appearing in more than one split: 0   <- clean
+   duplicate sample ids: 0
+
+1b. METADATA CONFOUND (induced by the gates, not by the audio)
+   field              complete   incomplete   std-gap
+   prev_dur              4.566        6.486     -0.33  <-- match on this when training
+   gap                   0.698        0.495      0.57  <-- match on this when training
+   (`gap` is metadata only -- it is never inside the clip, so a model
+    cannot read it; `prev_dur` leaks into the clip as voiced fraction.)
+
+2. CLIP GEOMETRY (must not separate the classes)
+   feature            complete   incomplete   std-gap
+   dur                  7.9832       7.9945     -0.06
+   rms_all              0.0398       0.0460     -0.16
+   rms_last200          0.0010       0.0015     -0.14
+   rms_last500          0.0189       0.0223     -0.14
+   rms_pre500           0.0305       0.0368     -0.18
+   peak                 0.3748       0.3862     -0.04
+   zcr                  0.0980       0.0970      0.02
+   tilt                -4.5226      -5.0647      0.28
+   p90_over_p50   1142434.6814 1160006.0572     -0.00
+   voiced_frac          0.5240       0.6074     -0.46
+
+3. SHORTCUT PROBE  (dumb global features, held-out calls)
+   AUC 0.601   accuracy 0.701   majority-class 0.702
+   -> clean: the label is not readable from crude acoustics
+   strongest crude features: voiced_frac(-0.48), rms_pre500(-0.48), tilt(+0.42), rms_all(+0.27)

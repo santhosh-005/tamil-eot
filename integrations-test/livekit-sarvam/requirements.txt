@@ -1,0 +1,23 @@
+# Live-call test rig. Install into the project venv:
+#
+#   .venv/bin/pip install -r integrations-test/livekit-sarvam/requirements.txt
+#   .venv/bin/pip install 'smart-turn-livekit[livekit]'
+#
+# Pinned to 1.7.0 because both adapters are written against that release, and
+# both use interfaces that are private in it: LiveKit's `_StreamingTurnDetector`
+# protocol and Pipecat's `_predict_endpoint`. Treat a minor bump as something
+# to re-run the test suite against, not as a free upgrade.
+
+# --- LiveKit: the primary path ---
+livekit-agents==1.7.0
+livekit-plugins-sarvam==1.7.0
+livekit-plugins-silero==1.7.0
+
+# --- Pipecat: the second path ---
+pipecat-ai[webrtc,runner,sarvam,silero]==1.7.0
+
+# --- shared ---
+soxr>=0.3                 # WebRTC delivers 48 kHz; the model needs 16 kHz
+python-dotenv>=1.0        # reads integrations-test/livekit-sarvam/.env
+sounddevice>=0.5          # local mic/speaker for `console` mode
+soundfile>=0.12           # selftests read real Tamil clips

@@ -1,0 +1,30 @@
+13,305 usable samples from samples_llm.jsonl  [LLM-relabelled]  sources=core
+
+1. SPLIT LEAKAGE
+   calls appearing in more than one split: 0   <- clean
+   duplicate sample ids: 0
+
+1b. METADATA CONFOUND (induced by the gates, not by the audio)
+   field              complete   incomplete   std-gap
+   prev_dur              5.709        6.308     -0.09
+   gap                   0.608        0.455      0.47  <-- match on this when training
+   (`gap` is metadata only -- it is never inside the clip, so a model
+    cannot read it; `prev_dur` leaks into the clip as voiced fraction.)
+
+2. CLIP GEOMETRY (must not separate the classes)
+   feature            complete   incomplete   std-gap
+   dur                  7.9888       7.9957     -0.04
+   rms_all              0.0436       0.0453     -0.04
+   rms_last200          0.0013       0.0014     -0.05
+   rms_last500          0.0196       0.0243     -0.18
+   rms_pre500           0.0322       0.0401     -0.20
+   peak                 0.3814       0.3854     -0.01
+   zcr                  0.0976       0.0967      0.02
+   tilt                -4.8130      -5.0752      0.13
+   p90_over_p50   1235534.5417 1007876.2174      0.02
+   voiced_frac          0.5721       0.6027     -0.17
+
+3. SHORTCUT PROBE  (dumb global features, held-out calls)
+   AUC 0.622   accuracy 0.642   majority-class 0.631
+   -> clean: the label is not readable from crude acoustics
+   strongest crude features: rms_pre500(-0.57), rms_all(+0.55), voiced_frac(-0.29), tilt(+0.17)

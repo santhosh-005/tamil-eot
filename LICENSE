@@ -1,0 +1,75 @@
+BSD 2-Clause License
+
+Copyright (c) 2026, santhosh-005
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+--------------------------------------------------------------------------------
+SCOPE
+
+The BSD-2-Clause licence above covers the code in this repository: src/,
+pipeline/, notebooks/ and integrations-test/.
+
+The datasets and models this code produces are published separately and carry
+their own terms, set out below.
+
+
+--------------------------------------------------------------------------------
+DATA
+
+The training data derives from SPRING_INX Tamil R1, SPRING Lab, Indian
+Institute of Technology Madras, released under Creative Commons Attribution 4.0
+International (CC BY 4.0).
+
+  https://arxiv.org/abs/2310.14654
+
+The derived dataset carries the same licence and the same attribution:
+
+  https://huggingface.co/datasets/santhosh-005/tamil-eot   (CC BY 4.0)
+
+The audio itself is not redistributed in this repository. It has to be obtained
+from SPRING Lab; see src/tamileot/paths.py.
+
+
+--------------------------------------------------------------------------------
+MODELS
+
+  https://huggingface.co/santhosh-005/smart-turn-tamil     (BSD-2-Clause)
+
+Fine-tunes of pipecat-ai/smart-turn (BSD-2-Clause, Daily), trained on data
+derived from SPRING_INX Tamil R1 (CC BY 4.0). Not distributed in this
+repository.
+
+
+--------------------------------------------------------------------------------
+THIRD-PARTY NOTICES
+
+  models/mel_filters.npz
+  The 80-band mel filterbank from OpenAI Whisper, used unmodified so that
+  feature extraction matches the model's training-time features exactly.
+  MIT License. Copyright (c) 2022 OpenAI. https://github.com/openai/whisper
+
+Weights fetched by pipeline/00_fetch_models.py are not redistributed here:
+
+  silero_vad.onnx            Silero VAD v5, MIT, https://github.com/snakers4/silero-vad
+  smart-turn-v3.*.onnx       BSD-2-Clause, https://github.com/pipecat-ai/smart-turn
