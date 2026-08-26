@@ -37,6 +37,9 @@ Made the balance **worse** (1.83:1 → 1.88:1): `hold_intra` flipped 56% to
 complete, `hold_inter` 71%. A short final talk-spurt plus a pause is usually a
 short **complete** answer, not a mid-thought pause.
 
+3,074 cut, **2,272 labelled** — train+dev only, so the test split stays frozen.
+That is **+19.9% training rows**.
+
 **Test gain +0.03 points.** Confound check passed (`prev_dur` d unchanged at
 −0.11). Kept — it is in the shipped 18,485 — but it is not a lever.
 
@@ -91,9 +94,13 @@ it would not carry the acoustics the model has to work in.
 | boundaries found | 50,532 |
 | first pass kept | 16,216 |
 | + held-back classes | already inside the 16,216, cut later |
-| + funnel relaxation | +3,074 |
 | − no usable LLM verdict | −3 |
+| + funnel relaxation, cut to disk | +3,074 |
+| − relaxed **test** rows, deliberately never labelled | −802 |
 | **shipped** | **18,485** |
+
+The 802 are cut but in no index — labelling train+dev only keeps the 4,168-clip
+test set frozen, so the retrain is directly comparable.
 
 | split | clips | complete | incomplete |
 |---|---|---|---|

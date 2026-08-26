@@ -11,6 +11,7 @@ their turn — from prosody, without waiting for a transcript.
 
 | | |
 |---|---|
+| **paper** | [`paper/tamileot.pdf`](paper/tamileot.pdf) — 12 pages: the method, every measurement, and the negative results |
 | **model** | [`santhosh-005/smart-turn-tamil`](https://huggingface.co/santhosh-005/smart-turn-tamil) — int8 ONNX, 8.7 MB / 21 MB, CPU |
 | **dataset** | [`santhosh-005/tamil-eot`](https://huggingface.co/datasets/santhosh-005/tamil-eot) — 18,485 labelled boundaries, CC BY 4.0 |
 | **plugin** | [`smart-turn-livekit`](https://pypi.org/project/smart-turn-livekit/) — `pip install`, runs on LiveKit Agents |
@@ -265,6 +266,7 @@ each one needs, and the two steps that must not be re-run casually.
 ## Layout
 
 ```
+paper/               the write-up, PDF and LaTeX source
 pipeline/            00-22, corpus -> dataset -> model -> release
 src/tamileot/        the library: corpus, vad, turns, rules, labelling
 notebooks/           the training notebook, plus the executed run behind base
