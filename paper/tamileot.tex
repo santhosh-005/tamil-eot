@@ -739,8 +739,12 @@ recorded instrumented calls.
 
 Against fixed-timeout endpointing on those recordings, the detector cost
 $+120$\,ms of median endpointing and bought a 35\pct{} reduction in utterance
-fragmentation. We report this as directional only: one speaker, one script,
-seven utterance blocks per arm.
+fragmentation. We report this as directional only: one speaker, seven utterance
+blocks per arm, and not a controlled comparison --- the language model and speech
+synthesis are non-deterministic, so each arm is a different conversation on a
+different clock. Only per-utterance rates are comparable across live arms; our
+load-bearing serving measurement is the paired offline replay of
+Section~\ref{sec:serving}.
 
 Three cautions are worth passing on, because each one produced a confident wrong
 answer first. \textbf{(1)} A live call cannot report accuracy. Nobody labelled,

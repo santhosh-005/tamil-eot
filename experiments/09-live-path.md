@@ -7,7 +7,7 @@ labelled, and only the second one is quotable as accuracy.
 |---|---|---|
 | 1 | does it run in a real agent at all? | ✅ LiveKit 1.7 + Pipecat 1.7, all-Sarvam stack |
 | 2 | what does serving cost in accuracy? | ✅ −2.60 points, 92.2% coverage |
-| 3 | does it beat a fixed timeout? | ⚠️ −35% fragmentation for +120 ms, small n |
+| 3 | does it beat a fixed timeout? | ⚠️ −35% fragmentation for +120 ms — directional; live arms cannot be paired |
 
 ---
 
@@ -92,7 +92,7 @@ This also explains a number that otherwise looks wrong: **the pre-cut column
 reads 86.12% while the full split reads 83.35%.** The boundaries a VAD surfaces
 are the easier ones.
 
-### ⚠️ Two harness bugs this caught — both produced confident wrong answers
+### ✅ The paired design caught two harness bugs, both silently wrong
 
 **1. A replay pump that outran the VAD.** Feeding audio to Silero and the
 detector concurrently with no throttle let the buffer fill *past* the close
@@ -124,13 +124,13 @@ where n=4,168 and labels exist. 🔍 Open.
 
 ---
 
-## 3. ⚠️ Against fixed-timeout endpointing
+## 3. Against fixed-timeout endpointing
 
 Without a detector the baseline is a **dial, not a point**: LiveKit sets
 `endpointing_delay = min_delay` and only moves to `max_delay` when a detector
 reports below threshold. So both ends of the dial have to be on the chart.
 
-Same speaker, same script, same order, 2026-08-25:
+Three arms, one speaker, one topic, 2026-08-25:
 
 | arm | endpointing p50 | frag / utterance | blocks | replies |
 |---|---|---|---|---|
@@ -138,13 +138,16 @@ Same speaker, same script, same order, 2026-08-25:
 | fixed 2.5 s | 2,501 ms | 1.0 | 5 | 5 |
 | **detector** | **421 ms** | **2.4** | 7 | 8 |
 
-`fixed 0.3` and `detector` had **7 utterance blocks each** over 3.5 / 3.2 min —
-that is the fair pairing. **+120 ms of endpointing buys −35% fragmentation.**
-The detector held the floor on 11 of 26 decisions.
+`fixed 0.3` and `detector` produced **7 utterance blocks each** over 3.5 / 3.2
+min — the closest pairing the run affords. **+120 ms of endpointing, −35%
+fragmentation.** The detector held the floor on 11 of 26 decisions.
 
-**Real, but not the claim it is tempting to make.** "Fast latency at the safe
-arm's interruption rate" would need 2.4 to be near 1.0, and it is not. Seven
-blocks per arm, one speaker, one script — directional, not a benchmark.
+**Not a controlled test.** The LLM and TTS are non-deterministic, so each arm is
+a different conversation on a different clock. Compare per-utterance rates, not
+totals or wall-clock. The paired measurement is §2.
+
+**Directional.** "Fast latency at the safe arm's interruption rate" would need
+2.4 to be near 1.0, and it is not.
 
 ### ⚠️ Three things that make live numbers hard to read
 

@@ -83,7 +83,10 @@ high and every turn pays the full wait.
 arm's latency at the slow arm's interruption rate. Both ends have to be on the
 chart or there is nothing to compare against.
 
-Same speaker, same script, same order, all three times.
+Same speaker and topic each time, but **not a controlled test** — the LLM and TTS
+are non-deterministic, so each run is a different conversation. Compare
+per-utterance rates, not totals. For a paired measurement use
+`pipeline/22_replay_live.py`.
 
 ## 5. Read the result
 
@@ -178,8 +181,12 @@ so a complaint lines up with the probability that caused it.
 
 ## Which operating point to test
 
-Run the same script twice and diff the reports. The threshold is the actual
-product decision, and it means different things per framework:
+**Pick the operating point offline** — live runs are not diffable. Use
+`experiments/07-thresholds.md` or `pipeline/22_replay_live.py`, then use a call
+to confirm it feels right.
+
+The threshold is the actual product decision, and it means different things per
+framework:
 
 | | Pipecat | LiveKit |
 |---|---|---|
