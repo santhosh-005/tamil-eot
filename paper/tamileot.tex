@@ -40,12 +40,13 @@ knowledge none covers a South Indian language. We release TamilEOT: 18,485 label
 boundaries cut from 116 real Tamil telephone conversations, and two audio-only
 detectors fine-tuned from Smart Turn v3. On a held-out split of 4,168 clips from
 30 unseen calls, accuracy rises from 70.30\pct{} zero-shot to 83.71\pct{}
-(8.7\,MB, 83\,ms on one CPU thread) and 86.13\pct{} (21\,MB, 143\,ms); ROC-AUC
-rises 0.751 $\rightarrow$ 0.921. We also report what building it cost.
+(8.7\,MB) and 86.13\pct{} (21\,MB); ROC-AUC rises 0.751 $\rightarrow$ 0.921.
+Both models run in under 150\,ms single-threaded on a laptop CPU. We also report
+what building it cost.
 Rule-derived labels, checked against a blind human listening pass, were right
 95.9\pct{} of the time on the positive class and 44.4\pct{} on the negative
-class --- below chance --- because the rule answered a different question than
-the model is asked. Replacing them with an audio-LLM labeller measured at
+class, which is below chance, because the rule answered a different question
+than the model is asked. Replacing them with an audio-LLM labeller measured at
 97.5\pct{} human agreement cost US\$5.69. Of every training lever we measured,
 only encoder capacity moved the result; three runs at identical config and seed
 span 0.87 accuracy points, which is the floor below which none of our other
@@ -67,12 +68,13 @@ turn waits for a timer that exists only to catch the pauses.
 
 A semantic end-of-turn (EOT) detector removes the dial. It listens to the last
 few seconds of the speaker's audio and predicts completion from prosody, without
-waiting for a transcript. Open models of this kind exist --- Smart Turn v3
-\cite{smartturn} is the most widely deployed --- but their released weights
-cover a fixed language list, and Tamil is not on it. Hosted speech APIs offer
-Tamil turn detection, but not as something you can inspect, retrain, or run
-locally. For Tamil there was no open dataset to train on either, which is the
-actual blocker: the architecture is small and the training script is public.
+waiting for a transcript. Open models of this kind exist, and Smart Turn v3
+\cite{smartturn} is the most widely deployed of them, but their released weights
+cover a fixed language list that does not include Tamil. This paper is about
+detectors that can be inspected, retrained and run locally, which is the setting
+where the language list is a hard limit rather than a feature request. For Tamil
+the missing piece was never the architecture, which is small and whose training
+script is public. It was a dataset to train it on.
 
 This paper describes what it took to close that gap for one language, and what
 we got wrong on the way.
@@ -136,7 +138,7 @@ condition most Indic voice agents actually run in.
 recent study of Thai end-of-turn detection \cite{thaieot}, which builds a Thai
 baseline from transcribed subtitles and classifies at token boundaries. That
 work is text-only and depends on a transcript; ours is audio-only and runs
-before one exists. The two approaches are complementary --- a transcript-based
+before one exists. The two approaches are complementary: a transcript-based
 detector cannot fire until ASR has emitted, and an audio-based one cannot read
 lexical cues.
 
@@ -160,7 +162,7 @@ detector receives: a voice agent sees the inbound user stream, not a mixdown.
 \subsection{Boundaries come from the VAD, not the transcript}
 
 The obvious way to find turn boundaries is to use the transcript segment edges.
-It is wrong here. Summed across both legs, the shipped segments cover about
+That does not work here. Summed across both legs, the shipped segments cover about
 107\pct{} of the call wall clock, which is only possible if they carry lead-in
 and trailing silence. Their edges therefore inflate apparent overlap and
 misplace every gap.
@@ -187,8 +189,8 @@ score well offline, and collapse against a production endpointer with different
 timing.
 
 We test for that rather than assert it. \texttt{09\_verify.py} fits a
-deliberately weak classifier on ten crude global features --- energy, duration,
-spectral tilt, voiced fraction --- that carry no prosodic structure. Near-chance
+deliberately weak classifier on ten crude global features (energy, duration,
+spectral tilt, voiced fraction) that carry no prosodic structure. Near-chance
 performance is the pass condition. Results are in Section~\ref{sec:shortcut}.
 On the most recent harvest, measured peak amplitude in the final 200\,ms is
 median 0.0021 and p95 0.0225: the trailing window is silence, and its length
@@ -197,8 +199,8 @@ carries no label information.
 \subsection{Composition and splits}
 
 Boundaries fall into four provenance classes, by how they were detected and
-whether the two available witnesses --- the other speaker's behaviour and the
-transcriber's segmentation --- agreed (Table~\ref{tab:sources}). Provenance is
+whether the two available witnesses (the other speaker's behaviour and the
+transcriber's segmentation) agreed (Table~\ref{tab:sources}). Provenance is
 recorded on every row but is \emph{not} a feature: it is unavailable at
 inference.
 
@@ -243,23 +245,24 @@ test & 30 & \textbf{4,168} & 2,629 & 1,539 \\
 total & 116 & 18,485 & 12,069 & 6,416 \\
 \bottomrule
 \end{tabular}
-\caption{Splits, assigned \emph{by call}. The test split has not moved since it
-was first cut.}
+\caption{Splits, assigned \emph{by call}. The test split was cut once, before
+any training, and was not revised afterwards.}
 \label{tab:splits}
 \end{minipage}
 \end{table}
 
-\paragraph{Split by call, never by clip.} Both SPRING-INX releases ship
-utterance-level splits that place the same recording on both sides --- in the R2
-release, 511 of 545 recordings appear in train and eval alike. A turn detector
-trained across such a split memorises voices instead of learning prosody. We
-split at the call level (Table~\ref{tab:splits}), so no voice in the test set
-was heard during training.
+\paragraph{Splitting at the call level.} Splits are assigned per call rather
+than per clip (Table~\ref{tab:splits}), so no voice in the test set was heard
+during training. This is worth stating explicitly, because the source corpus is
+distributed the other way: both SPRING-INX releases ship utterance-level splits
+that place the same recording on both sides, and in the R2 release 511 of 545
+recordings appear in train and eval alike. A turn detector trained across such a
+split can learn to recognise voices in place of prosody.
 
 \section{Labels}
 \label{sec:labels}
 
-\subsection{We measured our own labels, and they failed}
+\subsection{Validating the rule-derived labels}
 
 The first label set was rule-derived: a floor change at a segment end is
 \texttt{complete}; a pause wholly inside one transcript segment is
@@ -285,14 +288,14 @@ overall & & 70.1\pct \\
 \textbf{44.4\pct{} is below chance.} The negative class was worse than a coin
 flip.
 
-\subsection{Why: the rule answered a different question}
+\subsection{The rule answered a different question}
 
 The positive class works because it is grounded in behaviour that was
 \emph{recorded in the call}. The other speaker heard the turn end and took the
 floor. That is a witness.
 
 The negative class had no witness. ``A pause fell inside a transcript segment''
-is not a judgement about completeness --- it is a judgement about where a human
+is not a judgement about completeness. It is a judgement about where a human
 transcriber pressed enter.
 
 Underneath this sits a genuine ambiguity, and naming it is the useful part.
@@ -454,7 +457,7 @@ download, not from a training log.
 \section{Results}
 \label{sec:results}
 
-\subsection{The reproducibility floor, first}
+\subsection{The reproducibility floor}
 
 Before any delta: three \texttt{base} runs at identical configuration and
 identical seed scored \textbf{86.23\pct{} / 85.63\pct{} / 85.36\pct{}} --- a
@@ -492,23 +495,28 @@ TamilEOT-base & int8 static & 20.3M & 21\,MB & 73.46\pct & 0.792 & 13.70\pct & 1
 \end{tabular}
 \caption{Test split: 4,168 clips from 30 held-out calls, threshold 0.5. FP/$N$
 is Smart Turn's convention (see Section~1). Latency is p50, batch 1, one thread,
-inference only, on an idle Intel i5-12450H; add ${\sim}12$\,ms for the mel
-front-end. Released models in bold.}
+inference only, measured on a single idle development laptop (Intel i5-12450H);
+add ${\sim}12$\,ms for the mel front-end. Every build was timed the same way on
+the same machine, so the column is comparable within itself; it is not a
+deployment specification (Section~\ref{sec:serving}). Released models in bold.}
 \label{tab:main}
 \end{table}
 
 Table~\ref{tab:main} is the headline. Fine-tuning takes Tamil from
-70.30\pct{} to \textbf{86.13\pct} --- \textbf{+15.83 points} --- and ROC-AUC
+70.30\pct{} to \textbf{86.13\pct}, a gain of \textbf{15.83 points}, and ROC-AUC
 from 0.751 to 0.921.
 
-The zero-shot number is worth reading closely, because it is what made the
-project look tractable before anything was trained. At threshold 0.5, released
-Smart Turn calls \textbf{36.4\pct{} of unfinished Tamil turns finished}: an
-agent using it talks over the user on a third of their mid-sentence pauses. But
-its ROC-AUC is 0.751, not 0.5. Whisper's encoder already hears Tamil prosody ---
-the \emph{ranking} carries real signal and only the decision boundary is wrong.
-Threshold tuning alone, swept directly on test, tops out at 74.23\pct: a
-ceiling, not a fix.
+The zero-shot row is worth reading closely, because it is what made the project
+look tractable before anything was trained. At threshold 0.5, \texttt{v3.2}
+calls \textbf{36.4\pct{} of unfinished Tamil turns finished}, so an agent using
+it talks over the user on a third of their mid-sentence pauses. Its ROC-AUC,
+however, is 0.751 rather than 0.5: Whisper's encoder already hears Tamil
+prosody, the \emph{ranking} carries real signal, and only the decision boundary
+is wrong. That is also why the two zero-shot rows disagree in the direction they
+do. \texttt{v3.0} is the more conservative of the two, with a better AUC (0.779)
+and roughly half the false completions (7.08\pct{} against 13.44\pct{}), but it
+pays for that caution with 4.66 fewer points of accuracy. Threshold tuning alone, swept directly on test, tops
+out at 74.23\pct{} --- a ceiling rather than a fix.
 
 \subsection{Where the gains land}
 
@@ -536,7 +544,7 @@ The gains are concentrated exactly where they should be: on same-speaker pauses,
 which is the case a timeout cannot handle and where a majority-class policy is
 useless.
 
-\subsection{What moved the number, and what did not}
+\subsection{Training levers}
 
 We measured six training levers (Table~\ref{tab:levers}). One worked.
 
@@ -576,35 +584,36 @@ pass.
 
 \paragraph{Data, not compute.} Because epochs were fixed, a 25\pct{}-data run
 also took a quarter of the optimiser steps, which would confound the learning
-curve. Re-running at 25\pct{} data for $4\times$ the epochs --- the same 1,872
-steps --- returned $-0.17$ points. Four times the compute on the same data
+curve. Re-running at 25\pct{} data for $4\times$ the epochs, which is the same
+1,872 steps, returned $-0.17$ points. Four times the compute on the same data
 bought nothing; four times the data at fixed compute bought $+3.32$.
 
 \paragraph{Distillation fails in an instructive way.} Distilling base into tiny
-($\alpha=0.3$, $T=2.0$, loss function the only variable) gives $+0.41$ accuracy
---- inside the noise band --- and closes 14\pct{} of the teacher gap against a
+($\alpha=0.3$, $T=2.0$, loss function the only variable) gives $+0.41$ accuracy,
+inside the noise band, and closes 14\pct{} of the teacher gap against a
 textbook 30--60\pct{}. Broken down, the entire headline gain is $+3.22$ on
 \texttt{change}, the bucket where a speaker change already implies completion,
 while \emph{every bucket that requires hearing prosody got worse}, including
-\texttt{hold\_intra} at $-0.45$. FP/$N$ --- the metric that decides whether the
-agent talks over the user --- got worse by 1.41 points. A teacher that
+\texttt{hold\_intra} at $-0.45$. FP/$N$, the metric that decides whether the
+agent talks over the user, got worse by 1.41 points. A teacher that
 memorised its training set has structural regularities left to transfer, and
 little else.
 
 \paragraph{Class imbalance was not a problem.} The set is 1.88:1
 complete:incomplete, which looks like something to fix. It is not.
 \texttt{BCEWithLogitsLoss} already carries a per-batch \texttt{pos\_weight}
-$\approx 0.531$, so the two classes contribute equally; \texttt{hold\_intra} ---
-58\pct{} of the data and the bucket that decides the score --- is already
-1.16:1; and the global ratio comes from \texttt{change} at 12:1, which is
-definitional. We record this because the hypothesis was plausible enough to cost
-a day.
+$\approx 0.531$, so the two classes contribute equally. \texttt{hold\_intra},
+which is 56\pct{} of the data and the bucket that decides the score, is already
+balanced at 1.14:1. The global ratio comes almost entirely from \texttt{change}
+at 10.1:1, which is definitional: if the other speaker took the floor, the turn
+had ended. We record this because the hypothesis was plausible enough to cost a
+day.
 
 \paragraph{More data, less than expected.} Relaxing two funnel gates recovered
-2,272 additional train/dev rows --- 19.9\pct{} more training data --- and was
-worth $+0.03$ points. The prediction from the learning curve had been $+0.5$ to $+1.2$; at
-tiny's capacity the curve had already saturated. We keep the rows --- they cost
-about a dollar to label --- but the honest verdict is that they are not a lever.
+2,272 additional train/dev rows, 19.9\pct{} more training data, and was worth
+$+0.03$ points. The prediction from the learning curve had been $+0.5$ to
+$+1.2$; at tiny's capacity the curve had already saturated. We keep the rows,
+which cost about a dollar to label, but they are not a lever.
 Notably, relaxing the gate harvested \emph{positives}, not the negatives it was
 meant to: a short final talk-spurt followed by a pause is usually a short
 complete answer, not a mid-thought pause.
@@ -621,8 +630,8 @@ test sweep's best is 0.65 and the dev sweep's is 0.24, which is the same fact
 stated twice.
 
 Targeting a \emph{rate} transfers where targeting an argmax does not
-(Table~\ref{tab:thresholds}). Holding dev FPR to 10\pct{} --- the agent
-interrupts on at most one pause in ten --- roughly halves FP/$N$ for about three
+(Table~\ref{tab:thresholds}). Holding dev FPR to 10\pct{}, so that the agent
+interrupts on at most one pause in ten, roughly halves FP/$N$ for about three
 accuracy points. The direction transfers; the level slips to 12--14\pct{} on
 test. The released default remains 0.5, which is what every number in this paper
 uses.
@@ -658,25 +667,26 @@ costs $-12.76$ and AUC collapses 0.922 $\rightarrow$ 0.792, most of the way back
 to the zero-shot model. 20.3M parameters have a wider activation range than 256
 calibration clips can cover.
 
-\textbf{This is also the clearest case in our results for never reading one
-metric.} tiny int8 static has the best FP/$N$ in Table~\ref{tab:main} ---
-4.94\pct{} --- and is the second-worst model in it. It was also the variant we
-expected to win.
+This is also the clearest case in our results against reading a single metric.
+tiny int8 static has the best FP/$N$ in Table~\ref{tab:main}, at 4.94\pct{}, and
+is the second-worst model in it. It was also the variant we expected to win.
 
 \section{Serving}
 \label{sec:serving}
 
-\subsection{Every accuracy number above scores a clip that production never cuts}
+\subsection{Offline accuracy and served accuracy are different quantities}
 
 Offline evaluation scores a pre-cut window ending exactly 200\,ms past the
-speech offset, because the dataset builder cut it there. Nothing in production
-cuts a window that way. Live, the window is whatever the VAD hands over,
-whenever it decides speech stopped.
+speech offset, because that is where the dataset builder cut it. In deployment
+the window is whatever the VAD hands over, whenever it decides speech stopped.
+The gap between those two is a property of the system rather than of the model,
+and it is not visible in any table above, so we measured it.
 
-We measured the difference directly. 500 labelled test boundaries were replayed
-through the real Silero VAD (\texttt{min\_silence\_duration}$=0.25$) and the
-real streaming adapter in 20\,ms frames, and the \emph{same rows} were scored
-both ways in the same run.
+The design is a paired replay. 500 labelled test boundaries were pushed through
+the real Silero VAD (\texttt{min\_silence\_duration}$=0.25$) and the real
+streaming adapter in 20\,ms frames, and the \emph{same rows} were scored both
+ways in the same run, so the only variable is where the window ends. No STT, LLM
+or TTS is involved: none of them feed the prediction.
 
 \begin{center}\small
 \begin{tabular}{lrr}
@@ -694,77 +704,95 @@ FP/$N$ & 5.21\pct & \textbf{6.51\pct} \\
 verdict on 419 of 461 clips (90.9\pct); McNemar \cite{mcnemar} gives $p=0.09$,
 so the difference is consistent in direction but not formally significant at
 $p<0.05$. It is stable across sample sizes ($-2.67$ at $n=187$, $-2.60$ at
-$n=461$). Read it as ``about two to three points, probably real, small'' --- not
+$n=461$). Read it as two to three points, probably real and small, rather than
 as a constant.
 
-The cause is measurable and small: the VAD closes at p50 $+0.29$\,s past the
-labelled offset where the clips stop at $+0.20$\,s. A \textbf{90\,ms window
-shift} --- 90\,ms more trailing silence than training ever showed the model.
+The cause is measurable and small. The VAD closes at p50 $+0.29$\,s past the
+labelled offset where the clips stop at $+0.20$\,s, a \textbf{90\,ms window
+shift}, which is 90\,ms more trailing silence than training ever showed the
+model.
 
-\subsection{7.8\pct{} of boundaries never reach the model}
+\subsection{Coverage: the boundaries a VAD never surfaces}
 
-Of the 500 boundaries, the VAD closed on 461 (92.2\pct); on the other 39 it
-never closed, so the model was never consulted. The agent framework will not
-request a prediction below \texttt{min\_silence\_duration}$+50$\,ms. Those cases
-are not model errors --- they are outside the product --- but the offline test
-set counts them, which is one reason offline and live accuracy are not the same
-quantity. Coverage is 94\pct{} on \texttt{complete} and 89\pct{} on
+Of the 500 boundaries, the VAD closed on 461, or 92.2\pct{}; on the remaining 39
+it never closed, so the model was never consulted at all. The agent framework
+will not request a prediction below \texttt{min\_silence\_duration}$+50$\,ms.
+Those cases are outside the product rather than model errors, but the offline
+test set counts them, which is a second reason offline and served accuracy are
+not the same number. Coverage is 94\pct{} on \texttt{complete} and 89\pct{} on
 \texttt{incomplete}.
 
 This also explains a number that otherwise looks wrong: the pre-cut column
 reads 86.12\pct{} while the full split reads 83.35\pct{}. The boundaries a VAD
 surfaces are the easier ones.
 
-\subsection{Latency, with its conditions attached}
+\subsection{Latency, and what the numbers are good for}
 
-Model-only latency is in Table~\ref{tab:main}: 83\,ms for tiny int8 at one
-thread, 143\,ms for base. One thread is the number that matters --- a server
-carrying concurrent calls cannot give each one twelve cores --- and with all 12
-cores those figures fall to 27\,ms and 52\,ms.
+Every timing in this paper comes from one machine: an idle Intel i5-12450H
+laptop, batch 1, inference only. Model-only latency is in Table~\ref{tab:main},
+at 83\,ms for tiny int8 on one thread and 143\,ms for base; with all 12 cores
+those fall to 27\,ms and 52\,ms. One thread is the figure we lead with, because
+a server carrying concurrent calls cannot give each one twelve cores.
+End-to-end through the real adapter on live audio is 120--155\,ms, which adds
+the mel front-end ($\sim$12\,ms) and the thread handoff to the inference itself.
 
-End-to-end through the real adapter on live audio is \textbf{120--155\,ms}: mel
-front-end ($\sim$12\,ms), ONNX inference, and the thread handoff. These are
-different spans and both are correct; mixing them is how three wrong latency
-figures were published in this project before the measurement protocol was
-fixed. One of them (measured while another job saturated all cores, and
-$3$--$5\times$ inflated) produced a wrong shipping recommendation. \textbf{A
-latency number without thread count and machine load attached is not a
-measurement.}
+Read these as a comparison between builds rather than as a deployment
+specification. Server silicon, contention from the surrounding STT and TTS, and
+the agent framework's own scheduling all move the absolute figures, and none of
+those were varied here. What the column does establish is the ordering and the
+rough magnitude: int8 dynamic quantisation is worth about 38\pct{} at both
+sizes, and both released models leave most of a turn-taking latency budget
+unspent.
 
-\subsection{What a live call can and cannot tell you}
+The conditions are stated at this length because omitting them has a track
+record. Three wrong latency figures were published in this project before the
+measurement protocol was fixed, and one of them --- taken while another job
+saturated all cores, and inflated $3$--$5\times$ as a result --- produced a
+shipping recommendation we later had to withdraw.
 
-We ran the released model as a complete Tamil voice agent on LiveKit Agents 1.7
-and on Pipecat 1.7, with a commercial Indic STT/LLM/TTS stack around it, and
-recorded instrumented calls.
+\subsection{Deployment, and what live evidence establishes}
 
-Against fixed-timeout endpointing on those recordings, the detector cost
-$+120$\,ms of median endpointing and bought a 35\pct{} reduction in utterance
-fragmentation. We report this as directional only: one speaker, seven utterance
-blocks per arm, and not a controlled comparison --- the language model and speech
-synthesis are non-deterministic, so each arm is a different conversation on a
-different clock. Only per-utterance rates are comparable across live arms; our
-load-bearing serving measurement is the paired offline replay of
-Section~\ref{sec:serving}.
+The released model runs as a complete Tamil voice agent on LiveKit Agents 1.7
+and on Pipecat 1.7, with a commercial Indic STT/LLM/TTS stack around it. Both
+integrations are published, and instrumented calls were recorded on each.
 
-Three cautions are worth passing on, because each one produced a confident wrong
-answer first. \textbf{(1)} A live call cannot report accuracy. Nobody labelled,
-per pause, whether that speaker had finished; any accuracy figure from an
-unlabelled live call is invented. \textbf{(2)} The framework's own
-false-interruption counter read 0 on every arm, because it only fires once the
-agent has actually started speaking --- the commoner damage, a turn committed
-mid-sentence so the utterance arrives in five pieces, is invisible to it.
-\textbf{(3)} A control arm has to sit on the same commit path. Our first
+That is the first thing the live work establishes, and it is not a small one:
+the detector holds up inside two production agent frameworks at the latencies of
+Section~\ref{sec:serving}, with no offline-to-online glue left over. On those
+recordings, measured against fixed-timeout endpointing, it cost $+120$\,ms of
+median endpointing and returned a 35\pct{} reduction in utterance
+fragmentation.
+
+That second figure is directional, and we report it as such. Seven utterance
+blocks per arm and one speaker is a small sample, and the arms are not
+controlled: the language model and the speech synthesiser are both
+non-deterministic, so each arm is a different conversation on a different clock.
+Per-utterance rates are the only quantity comparable across arms; totals and
+wall-clock are not. The load-bearing serving result in this paper is therefore
+the paired replay of Section~\ref{sec:serving}, which is labelled, and the live
+calls are the existence proof that sits behind it.
+
+The reason for that division of labour is worth stating, because three
+properties of live calls limit what they can be asked. \textbf{(1)} A live call
+cannot report accuracy. Nobody labelled, per pause, whether the speaker had
+finished, so any accuracy figure taken from an unlabelled live call is invented.
+\textbf{(2)} The framework's own false-interruption counter read 0 on every arm,
+because it only fires once the agent has actually started speaking. The commoner
+damage --- a turn committed mid-sentence, so the utterance arrives in five
+pieces --- is invisible to it, which is why fragmentation is the rate we
+report. \textbf{(3)} A control arm has to sit on the same commit path. Our first
 comparison put the baselines on a code path that waits for ASR while the
-detector arm often had a pre-landed transcript; its apparent win was plumbing,
-and the run was discarded.
+detector arm often had a pre-landed transcript, so its apparent win was plumbing
+rather than prediction, and that run was discarded.
 
-We also caught two harness bugs this way, both of which produced plausible
-numbers. A replay pump that outran the VAD let the buffer fill past the close
-point, so the model saw audio a live session would not yet have had; it cost 26
-accuracy points and looked exactly like a serving catastrophe. Both bugs were
-caught by scoring the same rows the known-good way \emph{in the same run}: when
-the paired column failed to reproduce a known figure, the harness was wrong, not
-the model. \textbf{A live-only number is unfalsifiable.}
+The paired design earned its cost here by catching two harness bugs that both
+produced entirely plausible numbers. A replay pump that outran the VAD let the
+buffer fill past the close point, so the model saw audio a live session would
+not yet have had; it cost 26 accuracy points and looked exactly like a serving
+catastrophe. Both were caught the same way, by scoring the same rows the
+known-good way in the same run: when the paired column failed to reproduce a
+figure already established offline, the harness was at fault rather than the
+model. A live-only number has nothing to fail against.
 
 \section{Limitations}
 
@@ -785,9 +813,10 @@ reported as such rather than as findings. A determinism fix exists
 (\texttt{use\_deterministic\_algorithms}, disabling flash/mem-efficient SDPA) but
 is untested here and expensive.
 
-\textbf{Live evidence is thin.} The serving replay is properly labelled and
-paired; the live-call comparison is not, and should be read as an existence
-proof and a direction, not a benchmark.
+\textbf{The live comparison is not controlled.} The serving replay is labelled
+and paired and carries the serving claim. The live-call comparison against a
+fixed timeout is neither, and should be read as an existence proof and a
+direction rather than as a benchmark.
 
 \textbf{Known open items.} Regularisation is untried --- base reaches 98.99\pct{}
 train accuracy against 87.18\pct{} dev, which is heavy memorisation, and
@@ -797,8 +826,8 @@ window is cleared at each turn boundary and right-padded to 8 seconds with
 zeros, and only 58 of 16,216 training clips are shorter than 8 seconds, so the
 first prediction of every turn is out of distribution. Three live calls gave
 $+62$, $+21$ and $-1$ points on the affected rate, which is not a measurement.
-The correct experiment --- truncating test clips to 0.5/1/2/4\,s, where labels
-exist and $n=4{,}168$ --- is not yet run.
+The correct experiment, truncating test clips to 0.5/1/2/4\,s where labels exist
+and $n=4{,}168$, is not yet run.
 
 \section{Conclusion}
 
@@ -831,7 +860,7 @@ Everything below is public and was verified reachable anonymously.
 code, pipeline, all experiments & \url{https://github.com/santhosh-005/tamil-eot} \\
 models (int8 ONNX) & \url{https://huggingface.co/santhosh-005/smart-turn-tamil} \\
 dataset (18,485 boundaries, CC BY 4.0) & \url{https://huggingface.co/datasets/santhosh-005/tamil-eot} \\
-inference package & \url{https://pypi.org/project/smart-turn-livekit/} \\
+inference package & \url{https://pypi.org/project/smart-turn-livekit} \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -841,7 +870,7 @@ Code is BSD-2-Clause. The dataset derives from SPRING-INX Tamil R1
 licence; we do not own the recordings and redistribute them under attribution.
 The models are fine-tunes of \texttt{pipecat-ai/smart-turn} (BSD-2-Clause).
 
-Two pipeline steps --- the labeller bake-off and the label-quality analysis ---
+Two pipeline steps (the labeller bake-off and the label-quality analysis)
 reproduce their reports byte-identically from a bare clone with no corpus, no
 GPU and no cloud account, using the text-stripped label tables committed to the
 repository.
@@ -858,7 +887,7 @@ this would have been a much larger project.
 \bibitem{etd}
 Hyunjong Ok, Suho Yoo, and Jaeho Lee.
 \newblock Speculative End-Turn Detector for Efficient Speech Chatbot Assistant.
-\newblock \emph{arXiv:2503.23439}, 2025.
+\newblock In \emph{ACL 2026}. arXiv:2503.23439.
 
 \bibitem{vap}
 Erik Ekstedt and Gabriel Skantze.
