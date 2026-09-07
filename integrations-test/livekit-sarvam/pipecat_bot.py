@@ -87,7 +87,7 @@ async def run_bot(transport, recorder: TurnRecorder) -> None:
 
     key = os.environ["SARVAM_API_KEY"]
     stt = SarvamSTTService(api_key=key, settings=SarvamSTTService.Settings(
-        model=os.getenv("SARVAM_STT_MODEL", "saarika:v2.5"), language=Language.TA_IN))
+        model=os.getenv("SARVAM_STT_MODEL", "saaras:v3"), language=Language.TA_IN))
     tts = SarvamTTSService(api_key=key, settings=SarvamTTSService.Settings(
         model=os.getenv("SARVAM_TTS_MODEL", "bulbul:v3"), language=Language.TA_IN))
     llm = SarvamLLMService(api_key=key, settings=SarvamLLMService.Settings(

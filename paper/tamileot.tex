@@ -1,6 +1,6 @@
 % TamilEOT --- arXiv preprint
 % Compiles with plain pdflatex, no .bib file, no external style files.
-% Suggested arXiv categories: primary cs.CL; cross-list eess.AS, cs.SD.
+% arXiv categories as filed: primary cs.CL; cross-list cs.SD, cs.AI.
 \documentclass[11pt]{article}
 
 \usepackage[margin=1in]{geometry}
@@ -11,7 +11,16 @@
 \usepackage{amsmath}
 \usepackage{caption}
 \usepackage{titlesec}
-\usepackage[colorlinks=true,linkcolor=black,citecolor=black,urlcolor=[rgb]{0.0,0.25,0.55}]{hyperref}
+\usepackage{xcolor}
+
+\definecolor{myblue}{rgb}{0.0,0.25,0.55}
+
+\usepackage[
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=myblue
+]{hyperref}
 
 \captionsetup{font=small,labelfont=bf}
 \titlespacing*{\section}{0pt}{1.4ex plus 1ex minus .2ex}{0.8ex plus .2ex}

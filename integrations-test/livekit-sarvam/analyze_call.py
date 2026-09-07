@@ -146,7 +146,7 @@ def section_latency(d: dict, add) -> None:
     """What the caller waited. The only number here a listener would notice."""
     m = d["metric"]
     stages = [("endpointing", "end_of_turn_delay", "**ours**"),
-              ("transcription", "transcription_delay", "saarika"),
+              ("transcription", "transcription_delay", "sarvam STT"),
               ("LLM first token", "llm_node_ttft", "sarvam LLM"),
               ("TTS first byte", "tts_node_ttfb", "bulbul")]
     e2e = field(m, "e2e_latency")

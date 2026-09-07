@@ -162,7 +162,7 @@ async def entrypoint(ctx) -> None:
         "max_delay": BASELINE_DELAY if baseline else MAX_DELAY,
         "baseline_mode": BASELINE_MODE if baseline else None,
         "vad_min_silence": VAD_MIN_SILENCE,
-        "stt": os.getenv("SARVAM_STT_MODEL", "saarika:v2.5"),
+        "stt": os.getenv("SARVAM_STT_MODEL", "saaras:v3"),
         "tts": os.getenv("SARVAM_TTS_MODEL", "bulbul:v3"),
         "llm": os.getenv("SARVAM_LLM_MODEL", "sarvam-105b"),
     })
@@ -183,7 +183,7 @@ async def entrypoint(ctx) -> None:
 
     session = AgentSession(
         vad=silero.VAD.load(min_silence_duration=VAD_MIN_SILENCE),
-        stt=sarvam.STT(language="ta-IN", model=os.getenv("SARVAM_STT_MODEL", "saarika:v2.5")),
+        stt=sarvam.STT(language="ta-IN", model=os.getenv("SARVAM_STT_MODEL", "saaras:v3")),
         llm=sarvam.LLM(model=os.getenv("SARVAM_LLM_MODEL", "sarvam-105b")),
         tts=sarvam.TTS(target_language_code="ta-IN",
                        model=os.getenv("SARVAM_TTS_MODEL", "bulbul:v3")),

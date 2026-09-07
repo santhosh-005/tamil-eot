@@ -80,9 +80,14 @@ all-Sarvam stack around it:
 |---|---|
 | turn detection | **`smart-turn-tamil`** tiny int8 |
 | VAD | Silero, `min_silence_duration=0.25` |
-| STT | Sarvam `saarika:v2.5` |
+| STT | Sarvam `saaras:v3` |
 | LLM | Sarvam `sarvam-105b` |
 | TTS | Sarvam `bulbul:v3` |
+
+STT is overridable with `SARVAM_STT_MODEL`. The recorded runs in
+[experiments/09](experiments/09-live-path.md) used `saarika:v2.5`, which Sarvam
+has since retired; no measurement here depends on it, since the serving replay
+runs with no STT in the loop.
 
 Also verified on **Pipecat 1.7** via `LocalSmartTurnAnalyzerV3`. Adapter latency
 end-to-end is **~120–155 ms** on live audio — mel plus ONNX plus the thread
