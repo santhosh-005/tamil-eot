@@ -24,6 +24,18 @@ keywords:
 license: BSD-2-Clause
 date-released: "2026-08-25"
 version: "1.0.0"
+preferred-citation:
+  type: article
+  title: "TamilEOT: A Dataset and Model for Semantic End-of-Turn Detection in Tamil Telephone Speech"
+  authors:
+    - family-names: "V"
+      given-names: "Santhoshkumar"
+  year: 2026
+  journal: "arXiv preprint"
+  url: "https://arxiv.org/abs/2609.05631"
+  identifiers:
+    - type: other
+      value: "arXiv:2609.05631"
 references:
   - type: data
     title: "SPRING-INX: A Multilingual Indian Language Speech Corpus by SPRING Lab, IIT Madras"

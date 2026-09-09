@@ -11,7 +11,7 @@ their turn — from prosody, without waiting for a transcript.
 
 | | |
 |---|---|
-| **paper** | [`paper/tamileot.pdf`](paper/tamileot.pdf) — 12 pages: the method, every measurement, and the negative results |
+| **paper** | [arXiv:2609.05631](https://arxiv.org/abs/2609.05631) — 13 pages: the method, every measurement, and the negative results ([PDF in repo](paper/tamileot.pdf)) |
 | **model** | [`santhosh-005/smart-turn-tamil`](https://huggingface.co/santhosh-005/smart-turn-tamil) — int8 ONNX, 8.7 MB / 21 MB, CPU |
 | **dataset** | [`santhosh-005/tamil-eot`](https://huggingface.co/datasets/santhosh-005/tamil-eot) — 18,485 labelled boundaries, CC BY 4.0 |
 | **plugin** | [`smart-turn-livekit`](https://pypi.org/project/smart-turn-livekit/) — `pip install`, runs on LiveKit Agents |
@@ -308,10 +308,12 @@ are fine-tunes of `pipecat-ai/smart-turn` (BSD-2-Clause). Full scope in
 [LICENSE](LICENSE).
 
 ```bibtex
-@software{tamileot,
-  author = {santhosh-005},
-  title  = {TamilEOT: semantic end-of-turn detection for Tamil},
-  year   = {2026},
-  url    = {https://github.com/santhosh-005/tamil-eot}
+@article{tamileot,
+  author  = {Santhoshkumar V},
+  title   = {TamilEOT: A Dataset and Model for Semantic End-of-Turn
+             Detection in Tamil Telephone Speech},
+  journal = {arXiv preprint arXiv:2609.05631},
+  year    = {2026},
+  url     = {https://arxiv.org/abs/2609.05631}
 }
 ```
