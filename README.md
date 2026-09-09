@@ -11,7 +11,7 @@ their turn — from prosody, without waiting for a transcript.
 
 | | |
 |---|---|
-| **paper** | [arXiv:2609.05631](https://arxiv.org/abs/2609.05631) — 13 pages: the method, every measurement, and the negative results ([PDF in repo](paper/tamileot.pdf)) |
+| **paper** | [`arXiv:2609.05631`](https://arxiv.org/abs/2609.05631) — the method, every measurement, and the negative results |
 | **model** | [`santhosh-005/smart-turn-tamil`](https://huggingface.co/santhosh-005/smart-turn-tamil) — int8 ONNX, 8.7 MB / 21 MB, CPU |
 | **dataset** | [`santhosh-005/tamil-eot`](https://huggingface.co/datasets/santhosh-005/tamil-eot) — 18,485 labelled boundaries, CC BY 4.0 |
 | **plugin** | [`smart-turn-livekit`](https://pypi.org/project/smart-turn-livekit/) — `pip install`, runs on LiveKit Agents |
