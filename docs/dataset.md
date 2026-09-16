@@ -26,10 +26,12 @@ Licence **CC BY 4.0**, which is what makes the derived set redistributable.
 
 ### Boundaries come from the VAD, not the transcript timestamps
 
-The shipped transcript segments are **padded**: summed across both legs they
-cover ~107% of the call wall clock, which is only possible if they carry lead-in
-and trailing silence. Using their edges as turn boundaries inflates apparent
-overlap and misplaces every gap.
+The shipped transcript segments are **padded**. Measuring the same quantity two
+ways shows it: cross-channel overlap is 28.1% of speech when computed from
+segment boundaries, but only 9.4% when computed from VAD speech spans on the same
+audio. A segment that starts before its speaker does and ends after they stop
+manufactures overlap that is not there. Using their edges as turn boundaries
+inflates apparent overlap and misplaces every gap.
 
 The transcript is used for exactly two things:
 

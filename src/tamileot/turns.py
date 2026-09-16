@@ -1,10 +1,11 @@
 """Turn structure of a stereo call, derived from acoustics rather than from
 transcript timestamps.
 
-The transcript segments are padded -- both legs' segments summed cover 107% of
-the call wall clock, which is only possible if they include lead-in and
-trailing silence. Using their edges as turn boundaries therefore inflates
-apparent overlap and misplaces every gap. So the boundaries come from the VAD
+The transcript segments are padded -- cross-channel overlap reads 28.1% of
+speech when measured from segment boundaries but only 9.4% when measured from
+VAD spans on the same audio, which only a segment starting before its speaker
+and ending after them can produce. Using their edges as turn boundaries
+therefore inflates apparent overlap and misplaces every gap. So the boundaries come from the VAD
 speech spans, and the transcript is used for two things only:
 
   1. confirming a span is real speech on this leg and not crosstalk bleed from

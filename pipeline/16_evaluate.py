@@ -79,7 +79,7 @@ def main() -> int:
     m = confusion(y, (p > 0.5).astype(int))
     A = auc(y, p)
 
-    L = ["# Fine-tuned Smart Turn — Tamil", "",
+    L = ["# TamilEOT — evaluation", "",
          f"`{a.model}` on the sealed {a.split} split: **{m['n']:,} clips from "
          f"{len({r['base'] for r in rows})} calls**, never trained on.", "",
          "## Two FPR conventions — check which one a number is in", "",

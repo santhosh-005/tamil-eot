@@ -44,4 +44,8 @@ references:
   - type: software
     title: "Smart Turn"
     url: "https://github.com/pipecat-ai/smart-turn"
-    notes: "Base model and architecture, BSD-2-Clause."
+    notes: "Architecture and training code, BSD-2-Clause."
+  - type: software
+    title: "Whisper"
+    url: "https://huggingface.co/openai/whisper-tiny"
+    notes: "Encoder weight initialisation (tiny and base)."

@@ -124,7 +124,7 @@ that thing" are different claims.
 | check | result |
 |---|---|
 | both shipped ONNX re-scored locally on the sealed test set | reproduces the Colab numbers exactly |
-| `15_export_ckpt.py` re-exports the shipped base `.pt` → ONNX | **bit-identical** to the shipped graph, `max｜delta｜ 0.00e+00` |
+| `15_export_ckpt.py` re-exports the shipped base `.pt` → ONNX | predictions **numerically identical** to the shipped graph, `max｜delta｜ 0.00e+00` (outputs, not serialised bytes) |
 
 So the scoring path used for every number here is the same one that produced
 86.23%, and the export is not a re-training in disguise.

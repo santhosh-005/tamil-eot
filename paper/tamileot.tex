@@ -47,7 +47,7 @@ silence timeout: set it short and the agent interrupts, set it long and every
 turn pays the full wait. Open semantic end-of-turn detectors exist, but to our
 knowledge none covers a South Indian language. We release TamilEOT: 18,485 labelled turn
 boundaries cut from 116 real Tamil telephone conversations, and two audio-only
-detectors fine-tuned from Smart Turn v3. On a held-out split of 4,168 clips from
+detectors built on Smart Turn v3's architecture. On a held-out split of 4,168 clips from
 30 unseen calls, accuracy rises from 70.30\pct{} zero-shot to 83.71\pct{}
 (8.7\,MB) and 86.13\pct{} (21\,MB); ROC-AUC rises 0.751 $\rightarrow$ 0.921.
 Both models run in under 150\,ms single-threaded on a laptop CPU. We also report
@@ -132,8 +132,8 @@ activity of both speakers, and needs both channels. Smart Turn v3
 channel, the user's, and a binary verdict on the last 8 seconds. It is a
 Whisper-tiny encoder \cite{whisper} with a classification head, about 8M
 parameters, quantised to int8 and running in tens of milliseconds on CPU. Weights,
-data and training code are all open, which is why we fine-tuned it rather than
-starting over. Its released v3 weights cover 23 languages; the three Indic ones
+data and training code are all open, which is why we replicated it rather than
+designing our own. Its released v3 weights cover 23 languages; the three Indic ones
 (Bengali, Hindi, Marathi) are all Indo-Aryan, and no South Indian language is
 included.
 
@@ -171,10 +171,12 @@ detector receives: a voice agent sees the inbound user stream, not a mixdown.
 \subsection{Boundaries come from the VAD, not the transcript}
 
 The obvious way to find turn boundaries is to use the transcript segment edges.
-That does not work here. Summed across both legs, the shipped segments cover about
-107\pct{} of the call wall clock, which is only possible if they carry lead-in
-and trailing silence. Their edges therefore inflate apparent overlap and
-misplace every gap.
+That does not work here, because the shipped segments are padded. Measuring the
+same quantity two ways shows it directly: cross-channel overlap is 28.1\pct{} of
+speech when computed from segment boundaries, but only 9.4\pct{} when computed
+from VAD speech spans on the same audio. A segment that begins before its speaker
+starts and ends after they stop manufactures overlap that is not there. Their
+edges therefore inflate apparent overlap and misplace every gap.
 
 We run Silero VAD \cite{silero} on each leg independently and take speech
 onsets and offsets from it. The transcript is used for exactly two things:
@@ -261,12 +263,23 @@ any training, and was not revised afterwards.}
 \end{table}
 
 \paragraph{Splitting at the call level.} Splits are assigned per call rather
-than per clip (Table~\ref{tab:splits}), so no voice in the test set was heard
-during training. This is worth stating explicitly, because the source corpus is
-distributed the other way: both SPRING-INX releases ship utterance-level splits
+than per clip (Table~\ref{tab:splits}), so no \emph{call} in the test set was
+seen during training. This is worth stating explicitly, because the source corpus
+is distributed the other way: both SPRING-INX releases ship utterance-level splits
 that place the same recording on both sides, and in the R2 release 511 of 545
 recordings appear in train and eval alike. A turn detector trained across such a
-split can learn to recognise voices in place of prosody.
+split can learn to recognise a recording in place of prosody.
+
+Call-disjoint is not speaker-disjoint, and we cannot claim the stronger property.
+SPRING-INX ships no speaker identity --- \texttt{utt2spk} is degenerate, with
+\texttt{speaker\_id == utt\_id} on all 94,281 rows --- so there is nothing to
+verify it against. The 116 calls were recorded on seven days, one of which
+contributes 38 calls, and calls from every one of those days appear in more than
+one split. These are call-centre conversations in which one leg is an agent, and
+agent-side clips are roughly half the data, so the same agent voices are likely
+present on both sides of the split. We report this as a limitation rather than
+estimating its effect, which would require speaker labels the corpus does not
+provide.
 
 \section{Labels}
 \label{sec:labels}
@@ -325,7 +338,7 @@ Q2 & does the speaker \emph{intend to continue}? & a pause oracle; transcript-de
 
 Our rule-derived negatives answered Q2. Pause-derived labelling of real
 conversation is a reasonable construction and prior work uses it
-\cite{etd}; it simply is not the question a Smart Turn fine-tune is being
+\cite{etd}; it simply is not the question a Smart Turn model is being
 trained on. Rewording our evaluation to Q2 was ruled out for the same reason:
 mixing a Q2 corpus into a Q1-pretrained model teaches two different questions.
 
@@ -421,9 +434,11 @@ weighted & & \textbf{97.1\pct} \\
 \end{tabular}
 \end{center}
 
-\textbf{Above 97.1\pct{} a model is fitting labeller error.} Our best model is
-at 86.13\pct{}, so roughly 11 points of headroom remain and label quality is not
-what currently limits it.
+\textbf{Measured accuracy much above 97.1\pct{} would mean agreeing with labeller
+error.} The figure is an estimate, extrapolated from 197 clips scored by one
+listener, and should be read with that provenance rather than as a hard ceiling.
+Our best model is at 86.13\pct{}, so roughly 11 points of headroom remain on any
+reading, and label quality is not what currently limits it.
 
 Finally, the 197 human labels are themselves one listen to one isolated 8-second
 clip with no future audio, and are not truth. Three were wrong: all seven
@@ -436,7 +451,23 @@ number is re-derived from, rather than being hardcoded.
 
 The architecture is unchanged from Smart Turn v3: a Whisper encoder
 \cite{whisper} over an 8-second log-mel window, attention pooling, and a binary
-classification head. We fine-tune the whole stack.
+classification head. We train the whole stack, with no layers frozen.
+
+\paragraph{Where the weights start.} We replicate Smart Turn v3's model class and
+training recipe, and initialise the encoder exactly as its own training script
+does --- from \texttt{openai/whisper-tiny} or \texttt{openai/whisper-base}, with
+the pooling and classification heads randomly initialised. We do not fine-tune
+from the released v3 checkpoint. Two reasons: upstream's \texttt{train.py} sets
+\texttt{base\_model\_name} to \texttt{openai/whisper-tiny} and does the same, so
+this is the recipe rather than a departure from it; and v3 is distributed as ONNX
+only, with no trainable checkpoint published. Our models and Smart Turn v3 are
+therefore siblings from a common initialisation, differing in training data, which
+makes the zero-shot comparison in Section~\ref{sec:results} a comparison between
+two independently trained models rather than a before-and-after on one.
+
+Initialising instead from the released v3 weights, which would require recovering
+them from the distributed ONNX graph, is a lever we did not take and do not
+evaluate here.
 
 \begin{center}\small
 \begin{tabular}{ll}
@@ -458,8 +489,10 @@ one notebook and the encoder string is the only difference between them.
 \paragraph{Are the released files the models we trained?} These are two
 different claims and we checked both. First, both released ONNX files were
 re-scored locally on the sealed test set and reproduce their training numbers.
-Second, re-exporting the released \texttt{base} checkpoint produces a graph
-\textbf{bit-identical} to the published one ($\max|\Delta| = 0.00\mathrm{e}{+}00$).
+Second, re-exporting the released \texttt{base} checkpoint produces a graph whose
+predictions on the sealed test set are \textbf{numerically identical} to the
+published one's ($\max|\Delta| = 0.00\mathrm{e}{+}00$; we compare outputs, not
+serialised bytes).
 Every number in this paper therefore comes from the artefact a reader can
 download, not from a training log.
 
@@ -526,6 +559,15 @@ do. \texttt{v3.0} is the more conservative of the two, with a better AUC (0.779)
 and roughly half the false completions (7.08\pct{} against 13.44\pct{}), but it
 pays for that caution with 4.66 fewer points of accuracy. Threshold tuning alone, swept directly on test, tops
 out at 74.23\pct{} --- a ceiling rather than a fix.
+
+Both zero-shot rows score the int8 CPU builds, which is what a deployment would
+run. The distinction matters more than it sounds: the fp32 build of
+\texttt{v3.2} scores 59.50\pct{} with FP/$N$ 7.01\pct{} on this same split, about
+eleven points of accuracy away from its int8 sibling while ROC-AUC moves only
+0.008 (0.751 to 0.743). Two files released as one model, ranking equally well and
+thresholded differently --- the same effect Section~\ref{sec:results} reports for
+int8 \emph{static} quantisation, here separating two artefacts a user might
+download interchangeably.
 
 \subsection{Where the gains land}
 
@@ -877,7 +919,9 @@ inference package & \url{https://pypi.org/project/smart-turn-livekit} \\
 Code is BSD-2-Clause. The dataset derives from SPRING-INX Tamil R1
 \cite{springinx} (CC BY 4.0, SPRING Lab, IIT Madras) and carries the same
 licence; we do not own the recordings and redistribute them under attribution.
-The models are fine-tunes of \texttt{pipecat-ai/smart-turn} (BSD-2-Clause).
+The models are BSD-2-Clause, matching \texttt{pipecat-ai/smart-turn}, whose
+architecture and training code they reuse; their encoder weights are initialised
+from \texttt{openai/whisper-tiny} and \texttt{openai/whisper-base}.
 
 Two pipeline steps (the labeller bake-off and the label-quality analysis)
 reproduce their reports byte-identically from a bare clone with no corpus, no

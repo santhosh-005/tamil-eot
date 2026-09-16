@@ -77,6 +77,22 @@ architecture check.
 `do_normalize=True`** — not the Whisper default. Getting it wrong produces
 plausible but meaningless output.
 
+**`quantize_dynamic` quantises Conv by default, and that breaks the model.**
+It rewrites the two encoder convs as `ConvInteger`, for which onnxruntime's CPU
+provider has no kernel before 1.24 — `NOT_IMPLEMENTED : ConvInteger(10)`. The
+package pinned `onnxruntime>=1.16`, so the published default weights could not
+be loaded at all on most of the range it claimed to support, and the failure is
+at session construction, nowhere near the quantisation step that caused it.
+
+Upstream's own int8 build is the tell: it carries `Conv: 2` and zero
+`ConvInteger`. Pass `op_types_to_quantize=["MatMul"]`. Costs +1.6 MB and leaves
+two layers in float32; max output deviation from fp32 is 0.0035.
+
+**Diff the op types against a known-good model.** `collections.Counter(n.op_type
+for n in onnx.load(p).graph.node)` on ours versus upstream's showed the whole
+bug in one line — 2 `ConvInteger` where upstream had 2 float `Conv`. Much faster
+than reading a NOT_IMPLEMENTED trace.
+
 **int8 *static* costs −4 points at tiny and −12.76 at base** (AUC 0.922 →
 0.792). Dynamic is the free one.
 
@@ -107,7 +123,95 @@ when the agent actually started talking. The commoner damage — turn committed
 mid-sentence, utterance arriving in five pieces — is invisible to it.
 Fragmentation per utterance is the working proxy.
 
+## Publishing
+
+**Never leave results in the scratchpad.** Two hours of evaluation runs --
+outputs, metrics, the venv, a patched dependency clone -- were wiped when the
+session-scoped scratchpad was cleared, and none of it could be re-derived from
+disk. Same lesson as `/content` is ephemeral: write anything expensive into
+`reports/` as it is produced, not at the end.
+
+**Set `HF_HUB_DISABLE_XET=1` for large uploads.** `upload_folder` on the xet
+chunked path ran **6 hours and ~13 GB of egress for a 646 MB payload and
+committed nothing**. The same files over classic LFS took 4.5 minutes at
+~2.3 MB/s. Nothing errored; the repo simply stayed empty while bytes moved.
+
+**The tell is cumulative tx exceeding the payload size.** A slow uplink and a
+retry loop look identical from the outside -- both show steady throughput and
+an empty repo. Only the total transferred separates them. Check it before
+concluding "slow network".
+
+**Never background an upload with buffered stdout.** Redirected Python stdout
+is block-buffered, so the task output file sat at 0 bytes for the whole 6 hours
+and the progress bars never surfaced. Use `python -u`, and upload file by file
+so each commit lands independently and partial progress survives a kill.
+
+**Verify the push, do not assume it.** Compare the repo's LFS `sha256` against
+the local file, then `load_dataset` with a clean `HF_HOME` -- a cached load
+will succeed against a half-uploaded repo and tell you nothing.
+
 ## Pipeline
+
+**A merge that rebuilds from the source list loses everything merged before
+it.** The turn builder absorbs backchannel runs by joining the runs either side
+of them. Written as `merged[-1] = out[i-1] + out[i+1]` it is correct for one
+absorption and wrong for two in a row — `[A, b1, B, b2, C]` absorbs twice in a
+single pass, and the second rebuild drops `A`. It deleted **4,572 spans** —
+3,317 of them too long to be backchannels, **169 minutes of real speech**,
+including one continuous 10.37 s utterance. Mean turn duration moved 0.9 s and
+total audio 4 h, and nothing raised. Extend the accumulator
+(`merged[-1] = merged[-1] + out[i+1]`), never re-derive it.
+
+**Assert a partition, not a spot-check.** That bug was invisible to every
+per-row check — durations, ordering, span containment all passed, because the
+surviving rows were individually well-formed. It was caught in one line by
+asking whether *every input span* lands in exactly one output row. When a step
+regroups data rather than filtering it, totality is the check that finds the
+bugs the plausible-looking output hides.
+
+**"Inside the interval" is not "belongs to".** Two speakers genuinely overlap,
+so a whole other-side turn can sit inside this one's time range without having
+been folded into it. Conflating the two put 641 non-backchannels into the
+absorbed count. Membership has to be decided by onset and by what no other row
+claims — and the onset bound has to be inclusive, because both legs can open on
+the same VAD frame (one R1 call does: two people saying hello at once).
+
+**Dedup across a span edge only when the spans touch.** Joining a run's
+apportioned text drops a word repeated at a span boundary, because a word
+straddling two VAD spans is rounded into both. Applied unconditionally it also
+deletes genuine repetition: `ta_IN_10102885_20230404_L_0078` is "Hello", a
+**2.75 s pause**, then "Hello" again — two different transcript segments —
+rendered as one "Hello". Gate the dedup on the gap being under ~50 ms.
+
+**A row can contradict itself across rounding.** `clean` was decided on an
+unrounded `word_rate` while the row shipped the value rounded to 2 dp, so a
+turn at 0.9973 was excluded by a gate while displaying `word_rate: 1.0`. Decide
+gates on the number that ships, not the one before rounding.
+
+**A long pause is an end-of-turn, not a hesitation.** A 42.8 s turn whose ten
+pauses were `[8.45, 0.67, 0.64, 0.38, ...]` shipped that 8.45 s silence as a
+mid-turn hesitation. It is the opposite: the speaker finished, nobody answered,
+and they resumed -- the transcriber closed a segment at 310.95 and opened the
+next at 319.02. `LAPSE_S` is 2.0 s, matching `rules.NEG_MAX_PAUSE`.
+
+**Split, do not drop.** Both defects found by ear could have been filtered out
+of `clean`. Splitting the row instead turns one bad turn into two good ones
+*plus* an extra end-of-turn example: the clean count went **up**, 4,277 to
+4,774, while the gates got stricter.
+
+**A gate that only inspects pauses is blind to a turn with no pauses.**
+`ta_IN_10102663_20230123_R_0057` is 1.63 s cut off mid-sentence, sitting wholly
+inside the other leg's `[613.60, 620.58]` -- the speaker tried to take the
+floor, failed, gave up. `pause_crosstalk` was 0.0 because there were no pauses,
+so every pause-based check passed it. Measure crosstalk across the whole turn,
+not only its gaps -- and exclude absorbed backchannels first, or 14.9% of clean
+rows fail for a benign "mm".
+
+**Listen before believing a structural metric.** Every check passed on a table
+where **31.6% of rows opened mid-word** and **half the rows with a pause had
+the other speaker talking through it**. Totality, ordering and containment
+cannot see either one — the rows are well-formed, they are just not turns. Both
+were found in a 10-clip spot-listen, and only then became measurable.
 
 **Never re-run steps 03 or 05 casually.** They re-derive the sample set, which
 re-draws the 197 QA clips, every LLM verdict keyed by `sid`, the split, and

@@ -1,0 +1,42 @@
+========================================================================
+TURNS -- 21,596 from 116 calls, both legs
+========================================================================
+  duration        median   2.69s  mean   5.63s  p90  12.48s  max  410.34s
+  turn audio + trail            :  36.61 h
+  mid-turn pauses   median 0  mean 1.09  max 127   >=1 pause: 38.6%
+  words/turn        median   6.3   under 3 words: 27.4%
+  backchannels absorbed         : 4,930  in 3,099 turns
+
+  LONG TAIL  (real monologue, not a segmentation artefact -- one R1 call is 20 min of two sequential monologues at 0.5% overlap)
+    >  30s :   461 turns ( 2.13%)  holding  7.36 h of the 33.76 h
+    >  60s :   123 turns ( 0.57%)  holding  3.53 h of the 33.76 h
+    > 120s :    27 turns ( 0.13%)  holding  1.45 h of the 33.76 h
+    > 300s :     4 turns ( 0.02%)  holding  0.40 h of the 33.76 h
+    mid-turn pause  median 0.32s  p99 1.82s  max 1.98s   over 5 s: 0 of 23,477 (0.0%)
+
+  END-OF-TURN GAP
+    median  0.45s   p10  -1.60s   p90  2.72s
+    >= 0.2 s (clean EOT) : 12,644  ( 58.9%)
+    <  0   (overlap)     :  7,309  ( 34.0%)
+
+  QUALITY FUNNEL  (`clean` -- usable as an end-of-turn example)
+    all turns                              21,596 (100.0%)
+    opens an utterance, not mid-word       13,562 ( 62.8%)
+    + transcriber closed the utterance      9,346 ( 43.3%)
+    + other speaker not talking across it   5,502 ( 25.5%)
+    + handover not overlapped (eot >= 0)    5,400 ( 25.0%)
+    + at least 1.0 s of speech              4,891 ( 22.6%)
+    + transcript rate >= 1.0 word/s         4,774 ( 22.1%)
+    clean: duration median 5.02s  words median 13.0  labelled 2,113  audio 14.00 h
+
+  LABEL JOIN (gold boundary landing on a turn end)
+    joined   :  5,619  ( 26.0%)
+    complete :  5,020
+    incomplete:   599
+    unlabelled:15,977
+
+  SPLIT (carried through from manifest/split.json, unchanged)
+    split    turns  calls  labelled   clean
+    train   13,866     71     3,716   3,024
+    dev      2,349     15       608     482
+    test     5,381     30     1,295   1,268

@@ -139,7 +139,24 @@ def main() -> int:
         if a.requantise or not (dyn.exists() and st.exists()):
             prep = work / "_prep.onnx"
             quant_pre_process(str(src), str(prep), skip_symbolic_shape=True)
-            quantize_dynamic(str(prep), str(dyn), weight_type=QuantType.QInt8)
+            # MatMul only -- **never let this quantise Conv**. The default
+            # `op_types_to_quantize` includes Conv, which rewrites the two
+            # encoder convs as `ConvInteger`, and onnxruntime's CPU provider
+            # has no kernel for it before 1.24:
+            #
+            #   NOT_IMPLEMENTED : Could not find an implementation for
+            #   ConvInteger(10) node '/inner/encoder/conv1/Conv_quant'
+            #
+            # The package pins `onnxruntime>=1.16`, so that range shipped a
+            # default model that cannot be loaded at all on the versions it
+            # claims to support. Upstream's own int8 build leaves both convs
+            # as float for the same reason -- it carries `Conv: 2` and zero
+            # `ConvInteger`.
+            #
+            # Cost of excluding them: +1.6 MB (8.7 -> 10.3) and two layers
+            # left in float32. Max output deviation from fp32 is 0.0035.
+            quantize_dynamic(str(prep), str(dyn), weight_type=QuantType.QInt8,
+                             op_types_to_quantize=["MatMul"])
             nm = ort.InferenceSession(str(src), providers=["CPUExecutionProvider"]) \
                 .get_inputs()[0].name
             quantize_static(str(prep), str(st), MelReader(calib, nm),

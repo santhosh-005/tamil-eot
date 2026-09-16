@@ -29,9 +29,10 @@ speaking. Without a model of the language, that decision falls back to a fixed
 silence timeout — set it short and the agent interrupts, set it long and every
 turn pays the full wait.
 
-A semantic detector reads the prosody instead. This one is a fine-tune of
-[Smart Turn v3](https://github.com/pipecat-ai/smart-turn), whose released model
-covers a set of languages that does not include Tamil.
+A semantic detector reads the audio instead. This one uses
+[Smart Turn v3](https://github.com/pipecat-ai/smart-turn)'s architecture and
+training recipe, whose released model covers a set of languages that does not
+include Tamil.
 
 ## Results
 
@@ -47,9 +48,10 @@ Held-out test set: **4,168 clips from 30 calls**. Both models scored locally fro
 **+15.83 points over zero-shot**, and ROC-AUC 0.751 → 0.921.
 
 Both shipped ONNX files were **re-scored locally** and reproduce their training
-numbers, and re-exporting the shipped checkpoint gives a graph **bit-identical**
-to the published one (`max|delta| 0.00e+00`) — so these figures come from the
-artefact you can download, not from a training log.
+numbers, and re-exporting the shipped checkpoint gives a graph whose predictions
+are **numerically identical** to the published one's (`max|delta| 0.00e+00` on
+outputs, not serialised bytes) — so these figures come from the artefact you can
+download, not from a training log.
 
 For scale, Smart Turn's published per-language figures. **Those come from a
 different benchmark on TTS-generated audio; this is real narrowband telephone
@@ -133,7 +135,8 @@ attribution needs no diarization and carries no speaker-error rate. Verified:
 116/116 pairs complete, 0 ms duration mismatch between legs.
 
 Turn boundaries come from Silero VAD, not the transcript timestamps: the shipped
-segments are padded and summed cover ~107% of the call wall clock. The
+segments are padded, so cross-channel overlap reads 28.1% at segment level
+against 9.4% measured from VAD spans on the same audio. The
 transcript is used only to confirm a span is speech on that leg and to supply
 text for the backchannel filter. → [docs/dataset.md](docs/dataset.md)
 
@@ -195,7 +198,10 @@ capacity-bound; base is data-bound.* → [experiments/04](experiments/04-trainin
 | dev | 2,325 | 1,532 | 793 | 15 |
 | **test** | **4,168** | 2,629 | 1,539 | **30** |
 
-Split by **call** (not by clip) to prevent voice leakage between splits and ensure true prosodic generalization.
+Split by **call**, not by clip, so no recording appears on both sides. Note this
+is call-disjoint, not speaker-disjoint: the corpus ships no speaker labels, the
+116 calls were recorded on seven days, and agent voices are likely shared across
+splits.
 
 ---
 
@@ -210,7 +216,8 @@ pip install 'smart-turn-livekit[livekit]'
 ```python
 from smart_turn_livekit import SmartTurnDetector
 
-SmartTurnDetector()                                  # smart-turn-tamil-tiny
+SmartTurnDetector()                                  # upstream smart-turn-v3 — the plugin default
+SmartTurnDetector(model="smart-turn-tamil-tiny")     # this project's model
 SmartTurnDetector(model="smart-turn-tamil-base")     # +2.4 points, 2.4x size
 SmartTurnDetector(model="smart-turn-v3")             # upstream, other languages
 ```
@@ -303,9 +310,10 @@ Built and maintained by **Santhosh** ([@santhosh-005](https://github.com/santhos
 ## Licence and citation
 
 Code **BSD-2-Clause**. Data derives from **SPRING_INX Tamil R1** (CC BY 4.0),
-SPRING Lab, IIT Madras — the derived dataset carries the same licence. Models
-are fine-tunes of `pipecat-ai/smart-turn` (BSD-2-Clause). Full scope in
-[LICENSE](LICENSE).
+SPRING Lab, IIT Madras — the derived dataset carries the same licence. Models are
+**BSD-2-Clause**, matching `pipecat-ai/smart-turn`, whose architecture and
+training code they reuse; encoder weights are initialised from
+`openai/whisper-tiny` / `openai/whisper-base`. Full scope in [LICENSE](LICENSE).
 
 ```bibtex
 @article{tamileot,

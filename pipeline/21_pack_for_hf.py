@@ -362,8 +362,8 @@ transcribed by a human. Which file the audio came from *is* the speaker label:
 no diarization, no speaker-error rate. That is what made this buildable.
 
 Turn boundaries come from Silero VAD, not from transcript timestamps — the
-shipped segments are padded and cover ~107% of the call wall clock, so their
-edges are not turn boundaries.
+shipped segments are padded, with cross-channel overlap reading 28.1% at segment
+level against 9.4% from VAD spans, so their edges are not turn boundaries.
 
 Completeness labels come from **`gemini-3.7-flash` listening to audio only**,
 no transcript, no access to the pipeline's guess. Measured before use:

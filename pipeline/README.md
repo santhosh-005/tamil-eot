@@ -38,6 +38,9 @@ python pipeline/00_fetch_models.py
 | 20 | `label_policy` | rows, models | `reports/label_policy.md` | |
 | 21 | `pack_for_hf` | models, clips | `dist/hf/` | pyarrow |
 | 22 | `replay_live` | test split, corpus | `reports/replay_live.md` | livekit |
+| 23 | `build_turns` | vad, `samples_llm_all.jsonl`, `split.json` | `gold/turns.jsonl` | corpus |
+| 24 | `verify_turns` | `gold/turns.jsonl` | —, **exits non-zero on failure** | corpus |
+| 25 | `pack_turns_hf` | `gold/turns.jsonl`, corpus | `dist/hf/tamil-turns/` | pyarrow |
 
 Training is step 14½: `notebooks/train_smart_turn_tamil.ipynb`, on a Colab T4.
 Upload `data/colab/` to Drive, run the notebook, bring `best.pt` back.
@@ -60,7 +63,28 @@ so the text can be fixed without that.
 
 **The test split has never moved.** 4,168 clips from 30 calls, byte-identical
 across every repack, which is why every number in `experiments/` is on one
-benchmark. Anything that re-draws it invalidates all of them at once.
+benchmark. Anything that re-draws it invalidates all of them at once. Step 23
+reads `split.json` and carries it through per *call*, so `tamil-turns` agrees
+with `tamil-eot` about what "test" means; step 24 asserts the 71/15/30 call
+counts still hold.
+
+## Steps 23–25 build a separate dataset
+
+`turns` regroups the same speech into turn-level rows — one speaker's hold of
+the floor, mid-turn pauses separated from the end-of-turn. It needs no new VAD
+pass and no new labels, and **cuts no audio**: every row carries
+`start_time`/`end_time`/`trail_s`, so step 25 slices the leg WAVs straight into
+parquet rather than materialising 4.5 GB twice.
+
+It ships as **`santhosh-005/tamil-turns`, a separate repo**, not a second config
+on `tamil-eot`. `task_categories`, `tags` and `size_categories` are repo-level on
+the Hub and drive its search, so one repo cannot describe both units of analysis
+— and keeping them apart leaves the artefact the paper cites frozen as published.
+Step 25's docstring carries the full reasoning.
+
+Spec and the measured yield are in `docs/turns_format.md`. **Never publish
+without step 24 passing** — it caught a bug that had silently deleted 169 minutes
+of real speech.
 
 ## Credentials
 

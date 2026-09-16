@@ -1,4 +1,4 @@
-# Fine-tuned Smart Turn — Tamil
+# TamilEOT — evaluation
 
 `base-auc.onnx` on the sealed test split: **4,168 clips from 30 calls**, never trained on.
 

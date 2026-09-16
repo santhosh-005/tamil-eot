@@ -1,7 +1,7 @@
 # How EOT training data actually gets labelled
 
 Research pass answering five questions: what the standard labelling methods are,
-whether human listening scales, what Smart Turn really did, why no Dravidian
+whether human listening scales, what Smart Turn really did, why no South-Indian
 language has an EOT model, and how Gemini/OpenAI handle Tamil prosody without
 Tamil labels.
 
@@ -79,7 +79,7 @@ real calls for the last 7 points and for the eval set."
 Smart Turn's 23: Arabic, Bengali, Chinese, Danish, Dutch, German, English,
 Finnish, French, **Hindi**, Indonesian, Italian, Japanese, Korean, **Marathi**,
 Norwegian, Polish, Portuguese, Russian, Spanish, Turkish, Ukrainian,
-Vietnamese. Three Indic languages, all Indo-Aryan. **Zero Dravidian.**
+Vietnamese. Three Indic languages, all Indo-Aryan. **Zero South-Indian.**
 LiveKit's eot-bench: 14 languages, Hindi, no Tamil. Same line.
 
 Your hypothesis was that Tamil TTS isn't good enough to run the synthetic
@@ -87,7 +87,7 @@ recipe. I checked both inputs the recipe needs.
 
 **Hypothesis A — no Tamil TTS. False.** Chirp 3 HD — the exact model Smart Turn
 used — supports `ta-IN`, `te-IN`, `kn-IN`, `ml-IN`, plus hi/bn/mr/gu. It has
-SSML, `[pause long]` markup and `speaking_rate`. All four Dravidian languages
+SSML, `[pause long]` markup and `speaking_rate`. All four South-Indian languages
 were available the whole time.
 
 **Hypothesis B — no Tamil sentence corpus. False, and it is not close.** I
