@@ -14,6 +14,7 @@ their turn — from prosody, without waiting for a transcript.
 | **paper** | [`arXiv:2609.05631`](https://arxiv.org/abs/2609.05631) — the method, every measurement, and the negative results |
 | **model** | [`santhosh-005/smart-turn-tamil`](https://huggingface.co/santhosh-005/smart-turn-tamil) — int8 ONNX, 8.7 MB / 21 MB, CPU |
 | **dataset** | [`santhosh-005/tamil-eot`](https://huggingface.co/datasets/santhosh-005/tamil-eot) — 18,485 labelled boundaries, CC BY 4.0 |
+| **turns** | [`santhosh-005/tamil-turns`](https://huggingface.co/datasets/santhosh-005/tamil-turns) — 4,774 whole turns with their pause structure, CC BY 4.0 |
 | **plugin** | [`smart-turn-livekit`](https://pypi.org/project/smart-turn-livekit/) — `pip install`, runs on LiveKit Agents |
 | **this repo** | the data pipeline, the training method, and every experiment behind those |
 
@@ -203,6 +204,32 @@ is call-disjoint, not speaker-disjoint: the corpus ships no speaker labels, the
 116 calls were recorded on seven days, and agent voices are likely shared across
 splits.
 
+### Turn-level companion — [`tamil-turns`](https://huggingface.co/datasets/santhosh-005/tamil-turns)
+
+The 8-second window trains a classifier well and represents almost nothing else
+about turn-taking — not a speaker's own mid-turn pauses, not how long the silence
+that ends a turn actually was, not what the other leg was doing across it. Those
+are in the same calls, so they ship too.
+
+**4,774 whole turns** from 115 calls, 15.4 h, with **9,709 mid-turn pauses**.
+Each row is one speaker's continuous hold of the floor and every silence inside
+it: the last is the end of the turn, the earlier ones are hesitation. Same
+call-level split, so the two releases agree on what "test" means.
+
+| split | turns | eot-bench eligible |
+|---|---|---|
+| train | 3,024 | 2,739 |
+| dev | 482 | 437 |
+| **test** | **1,268** | 1,146 |
+
+Structural, not labelled — the silence layout comes from audio and transcript,
+not from anyone's judgement. Where a labelled boundary from `tamil-eot` lands on
+a turn's end it is joined in (2,113 of 4,774); the rest are `null`, not guessed.
+Of 21,596 raw turns only 4,774 pass the six `clean` gates, which is deliberate:
+spot-listening the ungated set found fragments cut mid-word and "pauses" that
+were the other speaker holding the floor.
+→ [docs/turns_format.md](docs/turns_format.md) · built by `pipeline/23`–`25`
+
 ---
 
 ## Quickstart: Using the Model
@@ -298,6 +325,7 @@ models/              fetched or downloaded, never committed
 |---|---|
 | [experiments/](experiments/README.md) | every experiment, with verdicts and the levers ranked |
 | [docs/dataset.md](docs/dataset.md) | the label oracle, schema, splits, clip geometry |
+| [docs/turns_format.md](docs/turns_format.md) | the turn-level schema, gates and measured yield |
 | [docs/pitfalls.md](docs/pitfalls.md) | what bit us — each once, each expensive |
 | [pipeline/README.md](pipeline/README.md) | the reproducible flow, step by step |
 

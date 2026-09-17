@@ -50,8 +50,10 @@ boundaries cut from 116 real Tamil telephone conversations, and two audio-only
 detectors built on Smart Turn v3's architecture. On a held-out split of 4,168 clips from
 30 unseen calls, accuracy rises from 70.30\pct{} zero-shot to 83.71\pct{}
 (8.7\,MB) and 86.13\pct{} (21\,MB); ROC-AUC rises 0.751 $\rightarrow$ 0.921.
-Both models run in under 150\,ms single-threaded on a laptop CPU. We also report
-what building it cost.
+Both models run in under 150\,ms single-threaded on a laptop CPU. From the same
+calls we also release a turn-level companion set of 4,774 whole turns with their
+internal pause structure, for turn-taking work the 8-second window cannot
+express. We also report what building it cost.
 Rule-derived labels, checked against a blind human listening pass, were right
 95.9\pct{} of the time on the positive class and 44.4\pct{} on the negative
 class, which is below chance, because the rule answered a different question
@@ -137,9 +139,9 @@ designing our own. Its released v3 weights cover 23 languages; the three Indic o
 (Bengali, Hindi, Marathi) are all Indo-Aryan, and no South Indian language is
 included.
 
-\paragraph{Datasets.} The ETD dataset \cite{etd} is the first public corpus
-aimed directly at end-turn detection, combining TTS-generated dialogue with real
-conversational audio. Smart Turn's own training corpus is largely TTS. Neither
+\paragraph{Datasets.} The ETD dataset \cite{etd} is, to our knowledge, the first
+public corpus aimed directly at end-turn detection, combining TTS-generated
+dialogue with real conversational audio. Smart Turn's own training corpus is largely TTS. Neither
 covers Tamil, and neither is narrowband telephone speech, which is the acoustic
 condition most Indic voice agents actually run in.
 
@@ -280,6 +282,36 @@ agent-side clips are roughly half the data, so the same agent voices are likely
 present on both sides of the split. We report this as a limitation rather than
 estimating its effect, which would require speaker labels the corpus does not
 provide.
+
+\subsection{A turn-level companion release}
+\label{sec:turns}
+
+The 8-second window is the right unit for training an end-of-turn classifier and
+the wrong one for almost everything else about turn-taking. It cannot represent a
+speaker's own mid-turn pauses, the length of the silence that actually ends a
+turn, or what the other speaker was doing across it. Those are the quantities a
+timing or interruption study needs, and they are present in the same calls, so we
+release them rather than discard them.
+
+\texttt{tamil-turns} regroups the same audio into \textbf{4,774 whole turns} from
+115 calls, 15.4 hours, carrying \textbf{9,709 mid-turn pauses}. Each row is one
+speaker's continuous hold of the floor with every silence inside it recorded: the
+last is the end of the turn, the earlier ones are hesitation. Turns come from
+floor occupancy over the same VAD spans, not from a classifier, and six gates
+decide which are clean --- the turn must open and close a transcript segment, the
+other speaker must not talk across it, the handover must not be overlapped, and
+it must carry at least a second of speech at a word per second. Of 21,596 raw
+turns, 4,774 survive. The gate is deliberately strict: spot-listening the ungated
+set turned up fragments cut mid-word and ``pauses'' that were the other speaker
+holding the floor.
+
+The split is the same call-level split used here, so the two releases agree on
+which calls are held out. Unlike the clip set, this one is \emph{structural
+rather than labelled}: the silence layout is derived from audio and transcript,
+not from anyone's judgement, so no annotation was required. Where a labelled
+boundary from the clip set lands on a turn's end the label is joined in, which
+covers 2,113 of the 4,774 turns; the rest carry \texttt{null} rather than a
+guess.
 
 \section{Labels}
 \label{sec:labels}
@@ -911,6 +943,7 @@ Everything below is public and was verified reachable anonymously.
 code, pipeline, all experiments & \url{https://github.com/santhosh-005/tamil-eot} \\
 models (int8 ONNX) & \url{https://huggingface.co/santhosh-005/smart-turn-tamil} \\
 dataset (18,485 boundaries, CC BY 4.0) & \url{https://huggingface.co/datasets/santhosh-005/tamil-eot} \\
+turn-level companion (4,774 turns, CC BY 4.0) & \url{https://huggingface.co/datasets/santhosh-005/tamil-turns} \\
 inference package & \url{https://pypi.org/project/smart-turn-livekit} \\
 \bottomrule
 \end{tabular}
