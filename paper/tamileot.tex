@@ -41,51 +41,47 @@
 
 \begin{abstract}
 \noindent
-A voice agent has to decide, at every pause, whether the user has finished
-speaking. Without a model of the language that decision falls back to a fixed
-silence timeout: set it short and the agent interrupts, set it long and every
-turn pays the full wait. Open semantic end-of-turn detectors exist, but to our
-knowledge none covers a South Indian language. We release TamilEOT: 18,485 labelled turn
-boundaries cut from 116 real Tamil telephone conversations, and two audio-only
-detectors built on Smart Turn v3's architecture. On a held-out split of 4,168 clips from
-30 unseen calls, accuracy rises from 70.30\pct{} zero-shot to 83.71\pct{}
-(8.7\,MB) and 86.13\pct{} (21\,MB); ROC-AUC rises 0.751 $\rightarrow$ 0.921.
-Both models run in under 150\,ms single-threaded on a laptop CPU. From the same
-calls we also release a turn-level companion set of 4,774 whole turns with their
-internal pause structure, for turn-taking work the 8-second window cannot
-express. We also report what building it cost.
-Rule-derived labels, checked against a blind human listening pass, were right
-95.9\pct{} of the time on the positive class and 44.4\pct{} on the negative
-class, which is below chance, because the rule answered a different question
-than the model is asked. Replacing them with an audio-LLM labeller measured at
-97.5\pct{} human agreement cost US\$5.69. Of every training lever we measured,
-only encoder capacity moved the result; three runs at identical config and seed
-span 0.87 accuracy points, which is the floor below which none of our other
-deltas mean anything. Replaying the same labelled boundaries through the
-production VAD and streaming adapter costs a further 2.60 points, and 7.8\pct{}
-of boundaries are never surfaced to the model at all. Data, weights, code and
-every negative result are public.
+A voice agent must decide, at each pause, whether the speaker has finished or
+is still thinking. Without a model of the language, systems fall back to a
+fixed silence timeout: too short, and the agent interrupts; too long, and every
+turn pays the full wait. We release TamilEOT, to our knowledge the first open
+dataset and detector for semantic end-of-turn detection in a South Indian
+language: 18,485 labelled turn boundaries from 116 real Tamil telephone
+conversations, two audio-only detectors built on Smart Turn v3's architecture,
+and a turn-level companion set of 4,774 whole turns with their pause structure.
+On a held-out split of 4,168 clips from 30 unseen calls, accuracy rises from
+70.30\pct{} zero-shot to 83.71\pct{} (8.7\,MB) and 86.13\pct{} (21\,MB); ROC-AUC
+rises 0.751 $\rightarrow$ 0.921. Both run in under 150\,ms single-threaded on a
+laptop CPU.
+
+We also report what building it cost. Our rule-derived negative-class labels
+scored 44.4\pct{} against a blind human pass --- below chance --- because the
+rule answered a different question than the model is asked; an audio-LLM
+labeller at 97.5\pct{} agreement replaced them for US\$5.69. Of six training
+levers, only encoder capacity moved the result: three identical runs spanned
+0.87 accuracy points, the floor below which nothing else here is a finding.
+Replaying labelled boundaries through the production VAD and streaming adapter
+costs a further 2.60 points, and 7.8\pct{} of boundaries never reach the model
+at all. Data, weights, code and every negative result are public.
 \end{abstract}
 
 \section{Introduction}
+\label{sec:intro}
 
-Turn-taking is the part of a voice agent users notice first when it is wrong.
-At each pause the agent must answer one question: has this person finished, or
-are they thinking? Voice activity detection answers a different question ---
-\emph{is there sound} --- so systems built on VAD alone add a fixed silence
-timeout on top. That timeout is a single dial with two bad ends. Short, and the
-agent talks over a speaker who paused mid-sentence. Long, and every completed
-turn waits for a timer that exists only to catch the pauses.
+At each pause, a voice agent must decide whether the speaker has finished or is
+still thinking. Voice activity detection cannot make that call: it detects
+sound, not intent. Systems built on VAD alone fall back to a fixed silence
+timeout, a single dial with two bad ends: too short, and the agent talks over a
+speaker who paused mid-sentence; too long, and every completed turn waits for a
+timer that exists only to catch the pauses.
 
 A semantic end-of-turn (EOT) detector removes the dial. It listens to the last
 few seconds of the speaker's audio and predicts completion from prosody, without
-waiting for a transcript. Open models of this kind exist, and Smart Turn v3
-\cite{smartturn} is the most widely deployed of them, but their released weights
-cover a fixed language list that does not include Tamil. This paper is about
-detectors that can be inspected, retrained and run locally, which is the setting
-where the language list is a hard limit rather than a feature request. For Tamil
-the missing piece was never the architecture, which is small and whose training
-script is public. It was a dataset to train it on.
+waiting for a transcript. Smart Turn v3 \cite{smartturn} is the most widely
+deployed open model of this kind, and its released weights cover a fixed
+language list that does not include Tamil. This paper is about detectors that
+can be inspected, retrained and run locally, where a fixed language list is a
+hard limit rather than a feature request.
 
 This paper describes what it took to close that gap for one language, and what
 we got wrong on the way.
@@ -95,10 +91,12 @@ we got wrong on the way.
 \item \textbf{A dataset.} 18,485 labelled turn boundaries from 116 real Tamil
 narrowband telephone conversations, split by call, released CC BY 4.0
 (Section~\ref{sec:data}). To our knowledge it is the first open dataset for
-semantic end-of-turn detection in Tamil, and the first in any South Indian
-language.
+semantic end-of-turn detection in any South Indian language. From the same
+calls we also release 4,774 whole turns with their
+internal pause structure, for the turn-taking questions an 8-second window
+cannot express (Section~\ref{sec:turns}).
 
-\item \textbf{A labelling protocol that is validated rather than assumed.}
+\item \textbf{A validated labelling protocol.}
 We measured our own rule-derived labels against a blind human pass, found the
 negative class below chance, diagnosed why, and replaced it with an audio-LLM
 labeller chosen by measurement. We also report the resulting label-noise
@@ -201,7 +199,7 @@ than negatives, a model could learn to read silence length instead of speech,
 score well offline, and collapse against a production endpointer with different
 timing.
 
-We test for that rather than assert it. \texttt{09\_verify.py} fits a
+We test for it directly. \texttt{09\_verify.py} fits a
 deliberately weak classifier on ten crude global features (energy, duration,
 spectral tilt, voiced fraction) that carry no prosodic structure. Near-chance
 performance is the pass condition. Results are in Section~\ref{sec:shortcut}.
@@ -266,11 +264,11 @@ any training, and was not revised afterwards.}
 
 \paragraph{Splitting at the call level.} Splits are assigned per call rather
 than per clip (Table~\ref{tab:splits}), so no \emph{call} in the test set was
-seen during training. This is worth stating explicitly, because the source corpus
-is distributed the other way: both SPRING-INX releases ship utterance-level splits
-that place the same recording on both sides, and in the R2 release 511 of 545
-recordings appear in train and eval alike. A turn detector trained across such a
-split can learn to recognise a recording in place of prosody.
+seen during training. Both SPRING-INX releases ship utterance-level splits
+instead, which place the same recording on both sides of a split; in the R2
+release, 511 of 545 recordings appear in train and eval alike. A turn detector
+trained across such a split can learn to recognise a recording in place of
+prosody.
 
 Call-disjoint is not speaker-disjoint, and we cannot claim the stronger property.
 SPRING-INX ships no speaker identity --- \texttt{utt2spk} is degenerate, with
@@ -291,17 +289,17 @@ the wrong one for almost everything else about turn-taking. It cannot represent 
 speaker's own mid-turn pauses, the length of the silence that actually ends a
 turn, or what the other speaker was doing across it. Those are the quantities a
 timing or interruption study needs, and they are present in the same calls, so we
-release them rather than discard them.
+release them.
 
 \texttt{tamil-turns} regroups the same audio into \textbf{4,774 whole turns} from
 115 calls, 15.4 hours, carrying \textbf{9,709 mid-turn pauses}. Each row is one
 speaker's continuous hold of the floor with every silence inside it recorded: the
 last is the end of the turn, the earlier ones are hesitation. Turns come from
 floor occupancy over the same VAD spans, not from a classifier, and six gates
-decide which are clean --- the turn must open and close a transcript segment, the
-other speaker must not talk across it, the handover must not be overlapped, and
-it must carry at least a second of speech at a word per second. Of 21,596 raw
-turns, 4,774 survive. The gate is deliberately strict: spot-listening the ungated
+decide which are clean: the turn opens a transcript segment; it closes one; the
+other speaker does not talk across it; the handover is not overlapped; it carries
+at least a second of speech; and it runs at no less than a word per second. Of
+21,596 raw turns, 4,774 survive. The gate is deliberately strict: spot-listening the ungated
 set turned up fragments cut mid-word and ``pauses'' that were the other speaker
 holding the floor.
 
@@ -311,7 +309,11 @@ rather than labelled}: the silence layout is derived from audio and transcript,
 not from anyone's judgement, so no annotation was required. Where a labelled
 boundary from the clip set lands on a turn's end the label is joined in, which
 covers 2,113 of the 4,774 turns; the rest carry \texttt{null} rather than a
-guess.
+guess. Two properties limit what the release can be used for: turns the other
+speaker cut into are excluded by the clean gate, so the set under-represents
+interruption at the handover itself; and the per-turn text is apportioned across
+VAD speech seconds rather than force-aligned, so it is approximate and carries no
+word-level timings.
 
 \section{Labels}
 \label{sec:labels}
@@ -443,10 +445,10 @@ relabelled & 0.622 & $\mathbf{-0.09}$ & $\mathbf{-0.17}$ \\
 
 Both rows are the matched core subsets, so the comparison is like for like; on
 the full released set \texttt{prev\_dur} $d=-0.11$. Cohen's $d$ on both leaked
-features drops to near zero. The probe's AUC goes
-\emph{up} slightly, 0.601 $\rightarrow$ 0.622, which we report rather than
-hide; both sit inside the near-chance band, and the class balance moved at the
-same time, so AUC is the comparable quantity and accuracy is not.
+features drops to near zero. The probe's AUC moves
+\emph{up} slightly, 0.601 $\rightarrow$ 0.622; both figures sit inside the
+near-chance band, and the class balance moved at the same time, so AUC is the
+comparable quantity and accuracy is not.
 
 \subsection{The label-noise ceiling}
 
@@ -568,7 +570,7 @@ TamilEOT-base & int8 static & 20.3M & 21\,MB & 73.46\pct & 0.792 & 13.70\pct & 1
 \bottomrule
 \end{tabular}
 \caption{Test split: 4,168 clips from 30 held-out calls, threshold 0.5. FP/$N$
-is Smart Turn's convention (see Section~1). Latency is p50, batch 1, one thread,
+is Smart Turn's convention (see Section~\ref{sec:intro}). Latency is p50, batch 1, one thread,
 inference only, measured on a single idle development laptop (Intel i5-12450H);
 add ${\sim}12$\,ms for the mel front-end. Every build was timed the same way on
 the same machine, so the column is comparable within itself; it is not a
@@ -597,9 +599,9 @@ run. The distinction matters more than it sounds: the fp32 build of
 \texttt{v3.2} scores 59.50\pct{} with FP/$N$ 7.01\pct{} on this same split, about
 eleven points of accuracy away from its int8 sibling while ROC-AUC moves only
 0.008 (0.751 to 0.743). Two files released as one model, ranking equally well and
-thresholded differently --- the same effect Section~\ref{sec:results} reports for
-int8 \emph{static} quantisation, here separating two artefacts a user might
-download interchangeably.
+thresholded differently --- the same effect Section~\ref{sec:quant} reports for
+int8 \emph{static} quantisation, here separating two
+artefacts a user might download interchangeably.
 
 \subsection{Where the gains land}
 
@@ -736,6 +738,7 @@ base, dev FPR $\le 10\pct$ & 0.92 & 82.41\pct & \textbf{4.51\pct} & \\
 \end{table}
 
 \subsection{Quantisation}
+\label{sec:quant}
 
 int8 \emph{dynamic} quantisation is free at both sizes: about $3.8\times$
 smaller, about 38\pct{} faster, and $-0.10$ to $+0.36$ accuracy --- both inside
@@ -758,6 +761,7 @@ is the second-worst model in it. It was also the variant we expected to win.
 \label{sec:serving}
 
 \subsection{Offline accuracy and served accuracy are different quantities}
+\label{sec:paired-replay}
 
 Offline evaluation scores a pre-cut window ending exactly 200\,ms past the
 speech offset, because that is where the dataset builder cut it. In deployment
@@ -810,6 +814,7 @@ reads 86.12\pct{} while the full split reads 83.35\pct{}. The boundaries a VAD
 surfaces are the easier ones.
 
 \subsection{Latency, and what the numbers are good for}
+\label{sec:latency}
 
 Every timing in this paper comes from one machine: an idle Intel i5-12450H
 laptop, batch 1, inference only. Model-only latency is in Table~\ref{tab:main},
@@ -839,9 +844,9 @@ The released model runs as a complete Tamil voice agent on LiveKit Agents 1.7
 and on Pipecat 1.7, with a commercial Indic STT/LLM/TTS stack around it. Both
 integrations are published, and instrumented calls were recorded on each.
 
-That is the first thing the live work establishes, and it is not a small one:
-the detector holds up inside two production agent frameworks at the latencies of
-Section~\ref{sec:serving}, with no offline-to-online glue left over. On those
+That is the first thing the live work establishes: the detector holds up inside
+two production agent frameworks at the latencies of
+Section~\ref{sec:latency}, with no offline-to-online glue left over. On those
 recordings, measured against fixed-timeout endpointing, it cost $+120$\,ms of
 median endpointing and returned a 35\pct{} reduction in utterance
 fragmentation.
@@ -852,8 +857,8 @@ controlled: the language model and the speech synthesiser are both
 non-deterministic, so each arm is a different conversation on a different clock.
 Per-utterance rates are the only quantity comparable across arms; totals and
 wall-clock are not. The load-bearing serving result in this paper is therefore
-the paired replay of Section~\ref{sec:serving}, which is labelled, and the live
-calls are the existence proof that sits behind it.
+the paired replay of Section~\ref{sec:paired-replay}, which is labelled, and the
+live calls are the existence proof that sits behind it.
 
 The reason for that division of labour is worth stating, because three
 properties of live calls limit what they can be asked. \textbf{(1)} A live call
@@ -914,10 +919,7 @@ and $n=4{,}168$, is not yet run.
 
 \section{Conclusion}
 
-Tamil semantic end-of-turn detection was not blocked by architecture. Smart Turn
-v3 is 8M parameters and its training code is public; what was missing was Tamil
-data with labels anyone had checked. We built that, and the build is the
-contribution as much as the model is.
+The dataset is the contribution here, not only the model it trains.
 
 Three things generalise past Tamil. First, \textbf{validate label rules by
 listening}: ours were 95.9\pct{} right on the class with a recorded witness and
@@ -1013,7 +1015,7 @@ Pipecat AI.
 Thanapol Popit, Natthapath Rungseesiripak, Monthol Charattrakool, and Saksorn
 Ruangtanusak.
 \newblock Thai Semantic End-of-Turn Detection for Real-Time Voice Agents.
-\newblock \emph{arXiv:2510.04016}, 2025.
+\newblock In \emph{IEEE ICSEC 2025}. arXiv:2510.04016.
 
 \end{thebibliography}
 
